@@ -1,0 +1,21 @@
+import sources;
+import sinks;
+
+// Interleaves and combines streams.
+// This function stops when either stream ends.
+fn mix(a stream<u8>, b stream<u8>) stream<u8> {
+    while !a.empty?() && !b.empty?() {
+        yield a.get().unwrap();
+        yield b.get().unwrap();
+    }
+}
+
+fn main() {
+    mix(sources::stdin(), 'foo'.cycle()) -> sinks::stdout();
+}
+
+// #[test]
+// fn it_mixes() {
+//     out := mix('foo', 'bar');
+//     assert out == 'fboaor';
+// }

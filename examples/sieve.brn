@@ -1,0 +1,30 @@
+import sources;
+import sinks;
+
+fn sieve_of_eratosthenes(n u32) stream<u32> {
+    arr := []bool{len: n, init: true};
+    max_check := n.sqrt() + 1;
+    for i in 2 .. max_check {
+        if arr[i] {
+            for j in sources::range(i*i, n, i) {
+                arr[j] = false;
+            }
+            yield i;
+        }
+    }
+    return arr
+        .enumerate()
+        .skip(max_check)
+        .filter(|(_, b)| b)
+        .map(|(i, _)| i);
+}
+
+fn main() {
+    // num's type is inferred from its use in the function call
+    // it is automatically parsed from string to u32 by the compiler
+    num := sources::args().skip(1).get().unwrap();
+    for num in sieve_of_eratosthenes(num) {
+        num.ascii().chain(' ') -> sinks::stdout();
+    }
+    '\n' -> sinks::stdout();
+}
