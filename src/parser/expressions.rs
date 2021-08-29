@@ -17,7 +17,10 @@ impl<'input, I> Parser<'input, I>
 where
     I: Iterator<Item = (Token, std::ops::Range<usize>)>,
 {
-    pub fn parse_expression(&mut self, binding_power: u8) -> ast::Expr {
+    pub fn expression(&mut self) -> ast::Expr {
+        self.parse_expression(0)
+    }
+    fn parse_expression(&mut self, binding_power: u8) -> ast::Expr {
         let mut lhs = match self.peek() {
             Token::Number(_) | Token::String => {
                 let (literal_token, literal_text) = self.next().unwrap();
@@ -94,6 +97,19 @@ where
                 | Token::Semicolon => break,
                 kind => panic!("Unknown operator: `{}`", kind),
             };
+
+            if let Some((left_bp, _)) = op.postfix_binding_power() {
+                if left_bp < binding_power {
+                    break;
+                }
+                self.consume(op);
+                lhs = ast::Expr::PostfixOp {
+                    op,
+                    expr: Box::new(lhs),
+                };
+                continue;
+            }
+
             if let Some((left_bp, right_bp)) = op.infix_binding_power() {
                 if left_bp < binding_power {
                     break;
