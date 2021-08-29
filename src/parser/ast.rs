@@ -29,6 +29,26 @@ pub enum Lit {
     Str(String),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Stmt {
+    Declaration {
+        var_name: String,
+        value: Box<Expr>,
+    },
+    Assignment {
+        var_name: String,
+        value: Box<Expr>,
+    },
+    IfStmt {
+        condition: Box<Expr>,
+        body: Vec<Stmt>,
+        else_stmt: Option<Box<Stmt>>,
+    },
+    Block {
+        stmts: Vec<Stmt>,
+    },
+}
+
 use std::fmt::{Display, Error, Formatter};
 impl Display for Expr {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {

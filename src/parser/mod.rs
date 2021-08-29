@@ -1,5 +1,6 @@
 pub mod ast;
 mod expressions;
+mod hierarchy;
 
 use crate::lexer::Token;
 use logos::{Logos, SpannedIter};

@@ -95,6 +95,7 @@ where
                 Token::EOF
                 | Token::RightParen
                 | Token::RightCurlyBracket
+                | Token::LeftCurlyBracket
                 | Token::Comma
                 | Token::Semicolon => break,
                 kind => panic!("Unknown operator: `{}`", kind),
