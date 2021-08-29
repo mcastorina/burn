@@ -90,10 +90,10 @@ where
                 | op @ Token::LessOrEqual
                 | op @ Token::RightAngleBracket
                 | op @ Token::GreaterOrEqual
-                | op @ Token::Bang => op,
+                | op @ Token::Bang
+                | op @ Token::RightArrow => op,
                 Token::EOF
                 | Token::RightParen
-                | Token::RightArrow
                 | Token::RightCurlyBracket
                 | Token::Comma
                 | Token::Semicolon => break,
@@ -117,38 +117,31 @@ where
                     break;
                 }
                 self.consume(op);
-                let rhs = self.parse_expression(right_bp);
-                lhs = ast::Expr::InfixOp {
-                    op,
-                    lhs: Box::new(lhs),
-                    rhs: Box::new(rhs),
-                };
+                let mut rhs = self.parse_expression(right_bp);
+                if op == Token::RightArrow {
+                    if let ast::Expr::FnCall {
+                        fn_name: _,
+                        ref mut args,
+                    } = rhs
+                    {
+                        args.push(lhs);
+                        lhs = rhs;
+                    } else {
+                        panic!(
+                            "Expected a function call after the arrow operator, found `{}`",
+                            rhs,
+                        );
+                    }
+                } else {
+                    lhs = ast::Expr::InfixOp {
+                        op,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    };
+                }
                 continue;
             }
             break;
-        }
-
-        if binding_power == 0 {
-            loop {
-                if !self.at(Token::RightArrow) {
-                    break;
-                }
-                self.consume(Token::RightArrow);
-                let mut expr = self.parse_expression(1);
-                if let ast::Expr::FnCall {
-                    fn_name: _,
-                    ref mut args,
-                } = expr
-                {
-                    args.push(lhs);
-                    lhs = expr;
-                } else {
-                    panic!(
-                        "Expected a function call after the arrow operator, found `{}`",
-                        expr
-                    );
-                }
-            }
         }
 
         lhs
@@ -177,8 +170,9 @@ impl Operator for Token {
             | Token::RightAngleBracket
             | Token::LessOrEqual
             | Token::GreaterOrEqual => (7, 8),
-            Token::Plus | Token::Minus => (9, 10),
-            Token::Asterisk | Token::Slash => (11, 12),
+            Token::RightArrow => (9, 10),
+            Token::Plus | Token::Minus => (11, 12),
+            Token::Asterisk | Token::Slash => (13, 14),
             Token::Caret => (22, 21), // <- This binds stronger to the left!
             _ => return None,
         };

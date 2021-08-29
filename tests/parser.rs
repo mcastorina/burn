@@ -108,3 +108,23 @@ fn parse_arithmetic() {
     assert_eq!(parse("4 * -10").to_string(), "(4 * (-10))");
     assert_eq!(parse("1 + 2!").to_string(), "(1 + (2!))");
 }
+
+#[test]
+fn parse_binary_expressions() {
+    fn parse(input: &str) -> Expr {
+        let mut parser = Parser::new(input);
+        parser.expression()
+    }
+
+    assert_eq!(
+        parse(r#"45 + 3 + 5 * 4^8^9 / 6 > 4 && test - 7 / 4 == "Hallo""#).to_string(),
+        r#"((((45 + 3) + ((5 * (4 ^ (8 ^ 9))) / 6)) > 4) && ((test - (7 / 4)) == "Hallo"))"#
+    );
+    assert_eq!(parse("1 + 2 == 3 + 4").to_string(), "((1 + 2) == (3 + 4))");
+    assert_eq!(parse("1 < 2 == 3 > 4").to_string(), "((1 < 2) == (3 > 4))");
+    assert_eq!(parse("1 -> foo() < -10").to_string(), "(foo(1) < (-10))");
+    assert_eq!(
+        parse("1 -> foo() == 2 -> bar()").to_string(),
+        "(foo(1) == bar(2))"
+    );
+}
