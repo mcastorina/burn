@@ -48,7 +48,7 @@ pub enum Token {
     #[token(":")]
     Colon,
     #[token("->")]
-    RArrow,
+    RightArrow,
     #[token("&")]
     Ampersand,
     #[token("<<")]
@@ -165,7 +165,7 @@ impl Display for Token {
             Token::Comma => write!(f, ","),
             Token::Semicolon => write!(f, ";"),
             Token::Colon => write!(f, ":"),
-            Token::RArrow => write!(f, "->"),
+            Token::RightArrow => write!(f, "->"),
             Token::Ampersand => write!(f, "&"),
             Token::LeftShift => write!(f, "<<"),
             Token::RightShift => write!(f, ">>"),

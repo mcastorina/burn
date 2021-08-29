@@ -58,6 +58,33 @@ fn parse_fn_calls() {
             args: Vec::new(),
         }
     );
+
+    parser = Parser::new("foo -> bar()");
+    assert_eq!(
+        parser.expression(),
+        Expr::FnCall {
+            fn_name: "bar".to_string(),
+            args: vec![Expr::Ident("foo".to_string())],
+        }
+    );
+
+    parser = Parser::new("foo() -> bar(\"baz\")");
+    assert_eq!(
+        parser.expression(),
+        Expr::FnCall {
+            fn_name: "bar".to_string(),
+            args: vec![
+                Expr::Literal(Lit::Str("baz".to_string())),
+                Expr::FnCall {
+                    fn_name: "foo".to_string(),
+                    args: Vec::new(),
+                }
+            ],
+        }
+    );
+
+    parser = Parser::new("1+2*3 -> foo()");
+    assert_eq!(parser.expression().to_string(), "foo((1 + (2 * 3)))");
 }
 
 #[test]

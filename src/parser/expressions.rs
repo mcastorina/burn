@@ -36,24 +36,25 @@ where
             Token::Ident => {
                 let (_, ident_name) = self.next().unwrap();
                 if !self.at(Token::LeftParen) {
-                    return ast::Expr::Ident(ident_name.to_string());
-                }
-                // function call
-                let mut args = Vec::new();
-                self.consume(Token::LeftParen);
-                while !self.at(Token::RightParen) {
-                    let arg = self.parse_expression(0);
-                    args.push(arg);
-                    if self.at(Token::Comma) {
-                        self.consume(Token::Comma);
-                    } else if !self.at(Token::RightParen) {
-                        panic!("Unexpected token");
+                    ast::Expr::Ident(ident_name.to_string())
+                } else {
+                    // function call
+                    let mut args = Vec::new();
+                    self.consume(Token::LeftParen);
+                    while !self.at(Token::RightParen) {
+                        let arg = self.parse_expression(0);
+                        args.push(arg);
+                        if self.at(Token::Comma) {
+                            self.consume(Token::Comma);
+                        } else if !self.at(Token::RightParen) {
+                            panic!("Unexpected token");
+                        }
                     }
-                }
-                self.consume(Token::RightParen);
-                ast::Expr::FnCall {
-                    fn_name: ident_name.to_string(),
-                    args,
+                    self.consume(Token::RightParen);
+                    ast::Expr::FnCall {
+                        fn_name: ident_name.to_string(),
+                        args,
+                    }
                 }
             }
             Token::LeftParen => {
@@ -92,6 +93,7 @@ where
                 | op @ Token::Bang => op,
                 Token::EOF
                 | Token::RightParen
+                | Token::RightArrow
                 | Token::RightCurlyBracket
                 | Token::Comma
                 | Token::Semicolon => break,
@@ -121,9 +123,28 @@ where
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
                 };
+                dbg!(&lhs);
                 continue;
             }
             break;
+        }
+
+        if binding_power == 0 && self.at(Token::RightArrow) {
+            self.consume(Token::RightArrow);
+            let mut expr = self.parse_expression(0);
+            if let ast::Expr::FnCall {
+                fn_name: _,
+                ref mut args,
+            } = expr
+            {
+                args.push(lhs);
+                lhs = expr;
+            } else {
+                panic!(
+                    "Expected a function call after the arrow operator, found `{}`",
+                    expr
+                );
+            }
         }
 
         lhs
