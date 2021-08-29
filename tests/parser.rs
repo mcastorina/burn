@@ -6,7 +6,7 @@ use burn::parser::Parser;
 fn parse_literals() {
     fn parse(input: &str) -> Expr {
         let mut parser = Parser::new(input);
-        parser.parse_expression()
+        parser.parse_expression(0)
     }
     assert_eq!(parse("1  ").to_string(), "1");
     assert_eq!(parse("  \"string\"").to_string(), "\"string\"");
@@ -20,7 +20,10 @@ fn parse_literals() {
 fn parse_idents() {
     fn test_parse(input: &str, expected: &str) {
         let mut parser = Parser::new(input);
-        assert_eq!(parser.parse_expression(), Expr::Ident(expected.to_string()));
+        assert_eq!(
+            parser.parse_expression(0),
+            Expr::Ident(expected.to_string())
+        );
     }
     test_parse("foo", "foo");
     test_parse("   Bar", "Bar");
@@ -32,7 +35,7 @@ fn parse_fn_calls() {
     let mut parser = Parser::new("foo(bar, 0)");
 
     assert_eq!(
-        parser.parse_expression(),
+        parser.parse_expression(0),
         Expr::FnCall {
             fn_name: "foo".to_string(),
             args: vec![Expr::Ident("bar".to_string()), Expr::Literal(Lit::Int(0))],
@@ -41,7 +44,7 @@ fn parse_fn_calls() {
 
     parser = Parser::new("foo(bar(baz))");
     assert_eq!(
-        parser.parse_expression(),
+        parser.parse_expression(0),
         Expr::FnCall {
             fn_name: "foo".to_string(),
             args: vec![Expr::FnCall {
@@ -53,7 +56,7 @@ fn parse_fn_calls() {
 
     parser = Parser::new("foo( )");
     assert_eq!(
-        parser.parse_expression(),
+        parser.parse_expression(0),
         Expr::FnCall {
             fn_name: "foo".to_string(),
             args: Vec::new(),
@@ -65,11 +68,11 @@ fn parse_fn_calls() {
 fn parse_arithmetic() {
     fn parse(input: &str) -> Expr {
         let mut parser = Parser::new(input);
-        parser.parse_expression()
+        parser.parse_expression(0)
     }
     assert_eq!(parse("1 + 2").to_string(), "(1 + 2)");
     assert_eq!(parse("1 + 2 + 3").to_string(), "((1 + 2) + 3)");
     assert_eq!(parse("1 + 2 * 3").to_string(), "(1 + (2 * 3))");
     assert_eq!(parse("1 * 2 - 3").to_string(), "((1 * 2) - 3)");
-    assert_eq!(parse("1 * (2 - 3)").to_string(), "(1 * (2 - 3)");
+    assert_eq!(parse("1*(2-3)").to_string(), "(1 * (2 - 3))");
 }

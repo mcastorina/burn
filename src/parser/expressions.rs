@@ -17,7 +17,7 @@ impl<'input, I> Parser<'input, I>
 where
     I: Iterator<Item = (Token, std::ops::Range<usize>)>,
 {
-    pub fn parse_expression(&mut self) -> ast::Expr {
+    pub fn parse_expression(&mut self, binding_power: u8) -> ast::Expr {
         let mut lhs = match self.peek() {
             Token::Number(_) | Token::String => {
                 let (literal_token, literal_text) = self.next().unwrap();
@@ -39,7 +39,7 @@ where
                 let mut args = Vec::new();
                 self.consume(Token::LeftParen);
                 while !self.at(Token::RightParen) {
-                    let arg = self.parse_expression();
+                    let arg = self.parse_expression(0);
                     args.push(arg);
                     if self.at(Token::Comma) {
                         self.consume(Token::Comma);
@@ -55,13 +55,14 @@ where
             }
             Token::LeftParen => {
                 self.consume(Token::LeftParen);
-                let expr = self.parse_expression();
+                let expr = self.parse_expression(0);
                 self.consume(Token::RightParen);
                 expr
             }
             op @ Token::Plus | op @ Token::Minus | op @ Token::Bang => {
                 self.consume(op);
-                let expr = self.parse_expression();
+                let (_, right_binding_power) = op.prefix_binding_power();
+                let expr = self.parse_expression(right_binding_power);
                 ast::Expr::PrefixOp {
                     op,
                     expr: Box::new(expr),
@@ -93,15 +94,60 @@ where
                 | Token::Semicolon => break,
                 kind => panic!("Unknown operator: `{}`", kind),
             };
-            self.consume(op);
-            let rhs = self.parse_expression();
-            lhs = ast::Expr::InfixOp {
-                op,
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
-            };
+            if let Some((left_bp, right_bp)) = op.infix_binding_power() {
+                if left_bp < binding_power {
+                    break;
+                }
+                self.consume(op);
+                let rhs = self.parse_expression(right_bp);
+                lhs = ast::Expr::InfixOp {
+                    op,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                };
+                continue;
+            }
+            break;
         }
 
         lhs
+    }
+}
+
+trait Operator {
+    fn prefix_binding_power(&self) -> ((), u8);
+    fn infix_binding_power(&self) -> Option<(u8, u8)>;
+    fn postfix_binding_power(&self) -> Option<(u8, ())>;
+}
+
+impl Operator for Token {
+    fn prefix_binding_power(&self) -> ((), u8) {
+        match self {
+            Token::Plus | Token::Minus | Token::Bang => ((), 51),
+            _ => unreachable!("Not a prefix operator: `{:?}`", self),
+        }
+    }
+    fn infix_binding_power(&self) -> Option<(u8, u8)> {
+        let result = match self {
+            Token::Or => (1, 2),
+            Token::And => (3, 4),
+            Token::Equal | Token::NotEqual => (5, 6),
+            Token::LeftAngleBracket
+            | Token::RightAngleBracket
+            | Token::LessOrEqual
+            | Token::GreaterOrEqual => (7, 8),
+            Token::Plus | Token::Minus => (9, 10),
+            Token::Asterisk | Token::Slash => (11, 12),
+            Token::Caret => (22, 21), // <- This binds stronger to the left!
+            _ => return None,
+        };
+        Some(result)
+    }
+    fn postfix_binding_power(&self) -> Option<(u8, ())> {
+        let result = match self {
+            Token::Bang => (101, ()),
+            _ => return None,
+        };
+        Some(result)
     }
 }
