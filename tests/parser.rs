@@ -85,6 +85,12 @@ fn parse_fn_calls() {
 
     parser = Parser::new("1+2*3 -> foo()");
     assert_eq!(parser.expression().to_string(), "foo((1 + (2 * 3)))");
+
+    parser = Parser::new("foo() -> bar() -> baz()");
+    assert_eq!(parser.expression().to_string(), "baz(bar(foo()))");
+
+    parser = Parser::new("foo() -> bar() -> baz() -> buzz()");
+    assert_eq!(parser.expression().to_string(), "buzz(baz(bar(foo())))");
 }
 
 #[test]

@@ -123,27 +123,31 @@ where
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
                 };
-                dbg!(&lhs);
                 continue;
             }
             break;
         }
 
-        if binding_power == 0 && self.at(Token::RightArrow) {
-            self.consume(Token::RightArrow);
-            let mut expr = self.parse_expression(0);
-            if let ast::Expr::FnCall {
-                fn_name: _,
-                ref mut args,
-            } = expr
-            {
-                args.push(lhs);
-                lhs = expr;
-            } else {
-                panic!(
-                    "Expected a function call after the arrow operator, found `{}`",
-                    expr
-                );
+        if binding_power == 0 {
+            loop {
+                if !self.at(Token::RightArrow) {
+                    break;
+                }
+                self.consume(Token::RightArrow);
+                let mut expr = self.parse_expression(1);
+                if let ast::Expr::FnCall {
+                    fn_name: _,
+                    ref mut args,
+                } = expr
+                {
+                    args.push(lhs);
+                    lhs = expr;
+                } else {
+                    panic!(
+                        "Expected a function call after the arrow operator, found `{}`",
+                        expr
+                    );
+                }
             }
         }
 
