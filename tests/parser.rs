@@ -189,7 +189,7 @@ fn parse_statements() {
             else_stmt,
         } => {
             assert!(matches!(
-                &**condition,
+                condition,
                 Expr::InfixOp {
                     op: Token::LeftAngleBracket,
                     lhs: _lhs,
@@ -220,7 +220,7 @@ fn parse_statements() {
                     else_stmt,
                 } => {
                     assert!(matches!(
-                        &**condition,
+                        condition,
                         Expr::InfixOp {
                             op: Token::LeftAngleBracket,
                             lhs: _lhs,
@@ -275,7 +275,7 @@ fn parse_fns() {
         fn foo(a int, b stream<u8>) stream<u8> {
             x := 1 + 2;
             x = x + 1;
-            x = x + 1;
+            return x;
         }
     "#,
     );
@@ -312,7 +312,6 @@ fn parse_fns() {
                     }
                 )
             );
-            assert_eq!(body.len(), 3);
             assert_eq!(
                 return_type,
                 Some(Type {
@@ -323,6 +322,13 @@ fn parse_fns() {
                     }],
                 })
             );
+            assert_eq!(body.len(), 3);
+            assert_eq!(
+                body[2],
+                Stmt::ReturnStmt {
+                    value: Some(Expr::Ident("x".to_string())),
+                }
+            )
         }
     }
 }

@@ -33,16 +33,19 @@ pub enum Lit {
 pub enum Stmt {
     Declaration {
         var_name: String,
-        value: Box<Expr>,
+        value: Expr,
     },
     Assignment {
         var_name: String,
-        value: Box<Expr>,
+        value: Expr,
     },
     IfStmt {
-        condition: Box<Expr>,
+        condition: Expr,
         body: Vec<Stmt>,
         else_stmt: Option<Box<Stmt>>,
+    },
+    ReturnStmt {
+        value: Option<Expr>,
     },
     Block {
         stmts: Vec<Stmt>,

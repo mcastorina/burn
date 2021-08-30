@@ -13,7 +13,7 @@ where
                 match self.peek() {
                     op @ Token::Declare => {
                         self.consume(op);
-                        let value = Box::new(self.expression());
+                        let value = self.expression();
                         self.consume(Token::Semicolon);
                         ast::Stmt::Declaration {
                             var_name: ident.to_string(),
@@ -22,7 +22,7 @@ where
                     }
                     op @ Token::Assign => {
                         self.consume(op);
-                        let value = Box::new(self.expression());
+                        let value = self.expression();
                         self.consume(Token::Semicolon);
                         ast::Stmt::Assignment {
                             var_name: ident.to_string(),
@@ -55,7 +55,7 @@ where
                     None
                 };
                 ast::Stmt::IfStmt {
-                    condition: Box::new(condition),
+                    condition: condition,
                     body,
                     else_stmt,
                 }
@@ -68,6 +68,17 @@ where
                 }
                 self.consume(Token::RightCurlyBracket);
                 ast::Stmt::Block { stmts }
+            }
+            Token::KeywordReturn => {
+                self.consume(Token::KeywordReturn);
+                if self.at(Token::Semicolon) {
+                    self.consume(Token::Semicolon);
+                    ast::Stmt::ReturnStmt { value: None }
+                } else {
+                    let expr = self.expression();
+                    self.consume(Token::Semicolon);
+                    ast::Stmt::ReturnStmt { value: Some(expr) }
+                }
             }
             _ => unreachable!(),
         }
