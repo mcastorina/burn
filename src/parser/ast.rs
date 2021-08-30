@@ -64,6 +64,7 @@ pub enum Item {
         body: Vec<Stmt>,
         return_type: Option<Type>,
     },
+    Import(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

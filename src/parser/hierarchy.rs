@@ -173,6 +173,34 @@ where
                     return_type,
                 }
             }
+            Token::KeywordImport => {
+                self.consume(Token::KeywordImport);
+                let (ident_tok, ident_name) = self
+                    .next()
+                    .expect("Expected an identifier after `import`, but there were no more tokens");
+                assert_eq!(
+                    ident_tok,
+                    Token::Ident,
+                    "Expected an identifier after `import`, but found `{}`",
+                    ident_name
+                );
+                let mut idents = vec![ident_name.to_string()];
+                while self.peek() == Token::DoubleColon {
+                    self.consume(Token::DoubleColon);
+                    let (ident_tok, ident_name) = self.next().expect(
+                        "Expected an identifier after `import`, but there were no more tokens",
+                    );
+                    assert_eq!(
+                        ident_tok,
+                        Token::Ident,
+                        "Expected an identifier after `import`, but found `{}`",
+                        ident_name
+                    );
+                    idents.push(ident_name.to_string());
+                }
+                self.consume(Token::Semicolon);
+                ast::Item::Import(idents)
+            }
             _ => unreachable!(),
         }
     }

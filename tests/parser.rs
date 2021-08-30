@@ -126,6 +126,23 @@ fn parse_method_calls() {
             }),
         },
     );
+
+    parser = Parser::new("1 -> foo::bar.baz()");
+    assert_eq!(
+        parser.expression(),
+        Expr::InfixOp {
+            op: Token::DoubleColon,
+            lhs: Box::new(Expr::Ident("foo".to_string())),
+            rhs: Box::new(Expr::InfixOp {
+                op: Token::Dot,
+                lhs: Box::new(Expr::Ident("bar".to_string())),
+                rhs: Box::new(Expr::FnCall {
+                    fn_name: "baz".to_string(),
+                    args: vec![Expr::Literal(Lit::Int(1))],
+                }),
+            }),
+        },
+    );
 }
 
 #[test]
@@ -390,5 +407,19 @@ fn parse_fns() {
                 }
             );
         }
+        _ => unreachable!(),
     }
+}
+
+#[test]
+fn parse_import() {
+    fn parse(input: &str) -> Item {
+        let mut parser = Parser::new(input);
+        parser.item()
+    }
+    assert_eq!(parse("import foo;"), Item::Import(vec!["foo".to_string()]));
+    assert_eq!(
+        parse("import foo::bar;"),
+        Item::Import(vec!["foo".to_string(), "bar".to_string()])
+    );
 }
