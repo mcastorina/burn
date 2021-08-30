@@ -59,6 +59,7 @@ pub enum Stmt {
     Block {
         stmts: Vec<Stmt>,
     },
+    Expr(Expr),
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -22,12 +22,15 @@ where
     }
     fn parse_expression(&mut self, binding_power: u8) -> ast::Expr {
         let mut lhs = match self.peek() {
-            Token::Number(_) | Token::String => {
+            Token::Number(_) | Token::String | Token::Byte => {
                 let (literal_token, literal_text) = self.next().unwrap();
                 let lit = match literal_token {
                     Token::Number(n) => ast::Lit::Int(n),
                     Token::String => {
                         ast::Lit::Str(literal_text[1..literal_text.len() - 1].to_string())
+                    }
+                    Token::Byte => {
+                        ast::Lit::Byt(literal_text[1..literal_text.len() - 1].to_string())
                     }
                     _ => unreachable!(),
                 };

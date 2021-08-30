@@ -29,7 +29,12 @@ where
                             value,
                         }
                     }
-                    _ => unreachable!(),
+                    _ => {
+                        self.push((Token::Ident, ident));
+                        let expr = self.expression();
+                        self.consume(Token::Semicolon);
+                        ast::Stmt::Expr(expr)
+                    }
                 }
             }
             Token::KeywordIf => {
@@ -121,7 +126,11 @@ where
                     stmts: body,
                 }
             }
-            _ => unreachable!(),
+            _ => {
+                let expr = self.expression();
+                self.consume(Token::Semicolon);
+                ast::Stmt::Expr(expr)
+            }
         }
     }
 
@@ -238,5 +247,14 @@ where
             }
             _ => unreachable!(),
         }
+    }
+
+    pub fn file(&mut self) -> Vec<ast::Item> {
+        let mut items = Vec::new();
+        while !self.at(Token::EOF) {
+            let item = self.item();
+            items.push(item);
+        }
+        items
     }
 }

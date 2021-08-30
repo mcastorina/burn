@@ -28,20 +28,46 @@ fn parse_idents() {
 }
 
 #[test]
+fn parse_comparisons() {
+    fn parse(input: &str) -> Expr {
+        let mut parser = Parser::new(input);
+        parser.expression()
+    }
+    assert_eq!(
+        parse("byte >= `A` && byte <= `Z`"),
+        Expr::InfixOp {
+            op: Token::And,
+            lhs: Box::new(Expr::InfixOp {
+                op: Token::GreaterOrEqual,
+                lhs: Box::new(Expr::Ident("byte".to_string())),
+                rhs: Box::new(Expr::Literal(Lit::Byt("A".to_string()))),
+            }),
+            rhs: Box::new(Expr::InfixOp {
+                op: Token::LessOrEqual,
+                lhs: Box::new(Expr::Ident("byte".to_string())),
+                rhs: Box::new(Expr::Literal(Lit::Byt("Z".to_string()))),
+            }),
+        }
+    );
+}
+
+#[test]
 fn parse_fn_calls() {
-    let mut parser = Parser::new("foo(bar, 0)");
+    fn parse(input: &str) -> Expr {
+        let mut parser = Parser::new(input);
+        parser.expression()
+    }
 
     assert_eq!(
-        parser.expression(),
+        parse("foo(bar, 0)"),
         Expr::FnCall {
             fn_name: "foo".to_string(),
             args: vec![Expr::Ident("bar".to_string()), Expr::Literal(Lit::Int(0))],
         }
     );
 
-    parser = Parser::new("foo(bar(baz))");
     assert_eq!(
-        parser.expression(),
+        parse("foo(bar(baz))"),
         Expr::FnCall {
             fn_name: "foo".to_string(),
             args: vec![Expr::FnCall {
@@ -51,27 +77,24 @@ fn parse_fn_calls() {
         },
     );
 
-    parser = Parser::new("foo( )");
     assert_eq!(
-        parser.expression(),
+        parse("foo( )"),
         Expr::FnCall {
             fn_name: "foo".to_string(),
             args: Vec::new(),
         }
     );
 
-    parser = Parser::new("foo -> bar()");
     assert_eq!(
-        parser.expression(),
+        parse("foo -> bar()"),
         Expr::FnCall {
             fn_name: "bar".to_string(),
             args: vec![Expr::Ident("foo".to_string())],
         }
     );
 
-    parser = Parser::new("foo() -> bar(\"baz\")");
     assert_eq!(
-        parser.expression(),
+        parse("foo() -> bar(\"baz\")"),
         Expr::FnCall {
             fn_name: "bar".to_string(),
             args: vec![
@@ -84,14 +107,16 @@ fn parse_fn_calls() {
         }
     );
 
-    parser = Parser::new("1+2*3 -> foo()");
-    assert_eq!(parser.expression().to_string(), "foo((1 + (2 * 3)))");
-
-    parser = Parser::new("foo() -> bar() -> baz()");
-    assert_eq!(parser.expression().to_string(), "baz(bar(foo()))");
-
-    parser = Parser::new("foo() -> bar() -> baz() -> buzz()");
-    assert_eq!(parser.expression().to_string(), "buzz(baz(bar(foo())))");
+    assert_eq!(parse("1+2*3 -> foo()").to_string(), "foo((1 + (2 * 3)))");
+    assert_eq!(
+        parse("foo() -> bar() -> baz()").to_string(),
+        "baz(bar(foo()))"
+    );
+    assert_eq!(
+        parse("foo() -> bar() -> baz() -> buzz()").to_string(),
+        "buzz(baz(bar(foo())))"
+    );
+    assert_eq!(parse("foo::bar()").to_string(), "(foo :: bar())");
 }
 
 #[test]
@@ -332,6 +357,18 @@ fn parse_statements() {
         }
         _ => unreachable!(),
     }
+
+    assert_eq!(
+        parse("foo::bar();"),
+        Stmt::Expr(Expr::InfixOp {
+            op: Token::DoubleColon,
+            lhs: Box::new(Expr::Ident("foo".to_string())),
+            rhs: Box::new(Expr::FnCall {
+                fn_name: "bar".to_string(),
+                args: Vec::new(),
+            }),
+        })
+    );
 }
 
 #[test]
@@ -451,4 +488,53 @@ fn parse_for() {
             stmts: Vec::new(),
         }
     );
+}
+
+#[test]
+fn parse_file() {
+    fn parse(input: &str) -> Vec<Item> {
+        let mut parser = Parser::new(input);
+        parser.file()
+    }
+
+    let items = parse(
+        r#"
+    import sinks;
+
+    fn main() {
+        'Hello, world!' -> sinks::stdout();
+    }
+    "#,
+    );
+
+    assert_eq!(items.len(), 2);
+    assert!(matches!(items[0], Item::Import(..)));
+    assert!(matches!(items[1], Item::Function { .. }));
+
+    let items = parse(
+        r#"
+        import sources;
+        import sinks;
+
+        // Rotates each byte by 13
+        fn rot13(input stream<u8>) stream<u8> {
+            for byte in input {
+                // yield can be used if the return type is a stream
+                if byte >= `a` && byte <= `m` || byte >= `A` && byte <= `M` {
+                    yield byte + 13;
+                } else if byte >= `n` && byte <= `z` || byte >= `N` && byte <= `Z` {
+                    yield byte - 13;
+                } else {
+                    yield byte;
+                }
+            }
+        }
+
+        fn main() {
+            // syntactic sugar for sinks::stdout(rot13(sources::stdin()))
+            sources::stdin() -> rot13() -> sinks::stdout();
+        }
+    "#,
+    );
+    assert_eq!(items.len(), 4);
 }

@@ -12,6 +12,7 @@ where
 {
     input: &'input str,
     tokens: Peekable<I>,
+    reserve: Option<(Token, &'input str)>,
 }
 
 impl<'input, I> Parser<'input, I>
@@ -19,16 +20,26 @@ where
     I: Iterator<Item = (Token, std::ops::Range<usize>)>,
 {
     pub fn peek(&mut self) -> Token {
-        self.tokens
-            .peek()
-            .map(|(token, _)| *token)
-            .unwrap_or(Token::EOF)
+        match self.reserve {
+            Some((tok, _)) => tok,
+            None => self
+                .tokens
+                .peek()
+                .map(|(token, _)| *token)
+                .unwrap_or(Token::EOF),
+        }
     }
     pub fn at(&mut self, kind: Token) -> bool {
         self.peek() == kind
     }
     pub fn next(&mut self) -> Option<(Token, &'input str)> {
-        self.tokens.next().map(|(token, r)| (token, &self.input[r]))
+        match self.reserve {
+            Some(data) => {
+                self.reserve = None;
+                Some(data)
+            }
+            None => self.tokens.next().map(|(token, r)| (token, &self.input[r])),
+        }
     }
     pub fn consume(&mut self, expected: Token) {
         let (token, _) = self.next().expect(&format!(
@@ -41,6 +52,12 @@ where
             expected, token
         );
     }
+    pub fn push(&mut self, data: (Token, &'input str)) {
+        if self.reserve.is_some() {
+            panic!("Cannot push; reserve is full: {:?}", self.reserve);
+        }
+        self.reserve = Some(data);
+    }
 }
 
 impl<'input> Parser<'input, SpannedIter<'input, Token>> {
@@ -48,6 +65,7 @@ impl<'input> Parser<'input, SpannedIter<'input, Token>> {
         Self {
             input,
             tokens: Token::lexer(input).spanned().peekable(),
+            reserve: None,
         }
     }
 }

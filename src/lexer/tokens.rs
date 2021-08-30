@@ -107,7 +107,7 @@ pub enum Token {
     GreaterOrEqual,
     #[token("<=")]
     LessOrEqual,
-    #[regex("//[^\n]*")]
+    #[regex("//[^\n]*", logos::skip)]
     Comment,
     #[token(".")]
     Dot,
