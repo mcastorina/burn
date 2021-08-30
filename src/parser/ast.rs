@@ -27,6 +27,7 @@ pub enum Expr {
 pub enum Lit {
     Int(usize),
     Str(String),
+    Byt(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -103,6 +104,7 @@ impl Display for Lit {
         match self {
             Lit::Int(n) => write!(f, "{}", n),
             Lit::Str(s) => write!(f, "\"{}\"", s),
+            Lit::Byt(s) => write!(f, "`{}`", s),
         }
     }
 }
@@ -123,4 +125,5 @@ fn display() {
         .to_string(),
         "(1 + 2)"
     );
+    assert_eq!(Expr::Literal(Lit::Byt("a".to_string())).to_string(), "`a`");
 }

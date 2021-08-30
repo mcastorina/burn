@@ -91,6 +91,7 @@ where
                 | op @ Token::RightAngleBracket
                 | op @ Token::GreaterOrEqual
                 | op @ Token::Bang
+                | op @ Token::Dot
                 | op @ Token::RightArrow => op,
                 Token::EOF
                 | Token::RightParen
@@ -128,10 +129,32 @@ where
                         args.push(lhs);
                         lhs = rhs;
                     } else {
-                        panic!(
-                            "Expected a function call after the arrow operator, found `{}`",
-                            rhs,
-                        );
+                        // could be a FnCall after a dot operator
+                        let mut expr = &mut rhs;
+                        loop {
+                            if let ast::Expr::InfixOp {
+                                op: Token::Dot,
+                                lhs: _,
+                                rhs,
+                            } = expr
+                            {
+                                expr = rhs;
+                            } else {
+                                panic!(
+                                    "Expected a function call after the arrow operator, found `{}`",
+                                    rhs,
+                                );
+                            }
+                            if let ast::Expr::FnCall {
+                                fn_name: _,
+                                ref mut args,
+                            } = expr
+                            {
+                                args.push(lhs);
+                                lhs = rhs;
+                                break;
+                            }
+                        }
                     }
                 } else {
                     lhs = ast::Expr::InfixOp {
@@ -175,6 +198,7 @@ impl Operator for Token {
             Token::Plus | Token::Minus => (11, 12),
             Token::Asterisk | Token::Slash => (13, 14),
             Token::Caret => (22, 21), // <- This binds stronger to the left!
+            Token::Dot => (24, 23),
             _ => return None,
         };
         Some(result)

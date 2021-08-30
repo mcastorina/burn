@@ -95,6 +95,60 @@ fn parse_fn_calls() {
 }
 
 #[test]
+fn parse_method_calls() {
+    let mut parser = Parser::new("foo.bar()");
+
+    assert_eq!(
+        parser.expression(),
+        Expr::InfixOp {
+            op: Token::Dot,
+            lhs: Box::new(Expr::Ident("foo".to_string())),
+            rhs: Box::new(Expr::FnCall {
+                fn_name: "bar".to_string(),
+                args: Vec::new(),
+            }),
+        }
+    );
+
+    parser = Parser::new("1 -> foo.bar.baz()");
+    assert_eq!(
+        parser.expression(),
+        Expr::InfixOp {
+            op: Token::Dot,
+            lhs: Box::new(Expr::Ident("foo".to_string())),
+            rhs: Box::new(Expr::InfixOp {
+                op: Token::Dot,
+                lhs: Box::new(Expr::Ident("bar".to_string())),
+                rhs: Box::new(Expr::FnCall {
+                    fn_name: "baz".to_string(),
+                    args: vec![Expr::Literal(Lit::Int(1))],
+                }),
+            }),
+        },
+    );
+}
+
+#[test]
+fn parse_dot_operator() {
+    fn parse(input: &str) -> Expr {
+        let mut parser = Parser::new(input);
+        parser.expression()
+    }
+    assert_eq!(parse("foo.bar").to_string(), "(foo . bar)");
+    assert_eq!(parse("foo.bar.baz").to_string(), "(foo . (bar . baz))");
+    assert_eq!(parse("1.2").to_string(), "(1 . 2)");
+    assert_eq!(parse("foo.bar + baz").to_string(), "((foo . bar) + baz)");
+    assert_eq!(
+        parse("1 + foo.bar + baz").to_string(),
+        "((1 + (foo . bar)) + baz)"
+    );
+    assert_eq!(
+        parse("1 ^ foo.bar ^ 2").to_string(),
+        "(1 ^ ((foo . bar) ^ 2))"
+    );
+}
+
+#[test]
 fn parse_arithmetic() {
     fn parse(input: &str) -> Expr {
         let mut parser = Parser::new(input);

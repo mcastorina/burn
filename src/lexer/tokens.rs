@@ -13,6 +13,8 @@ pub enum Token {
     Number(usize),
     #[regex(r#""([^"]|\.)*"|'([^']|\.)*'"#)]
     String,
+    #[regex(r#"`([^\\]|\.)`"#)]
+    Byte,
     #[token("+")]
     Plus,
     #[token("-")]
@@ -106,7 +108,7 @@ pub enum Token {
     #[regex("//[^\n]*")]
     Comment,
     #[token(".")]
-    Period,
+    Dot,
     #[token("break")]
     KeywordBreak,
     #[token("continue")]
@@ -148,6 +150,7 @@ impl Display for Token {
             Token::Ident => write!(f, "ident"),
             Token::Number(n) => write!(f, "num({})", n),
             Token::String => write!(f, "string"),
+            Token::Byte => write!(f, "byte"),
             Token::Plus => write!(f, "+"),
             Token::Minus => write!(f, "-"),
             Token::Asterisk => write!(f, "*"),
@@ -194,7 +197,7 @@ impl Display for Token {
             Token::GreaterOrEqual => write!(f, ">="),
             Token::LessOrEqual => write!(f, "<="),
             Token::Comment => write!(f, "// comment"),
-            Token::Period => write!(f, "."),
+            Token::Dot => write!(f, "."),
             Token::KeywordBreak => write!(f, "break"),
             Token::KeywordContinue => write!(f, "continue"),
             Token::KeywordElse => write!(f, "else"),
