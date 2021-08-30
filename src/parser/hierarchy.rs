@@ -86,6 +86,41 @@ where
                 self.consume(Token::Semicolon);
                 ast::Stmt::YieldStmt { value: expr }
             }
+            Token::KeywordFor => {
+                self.consume(Token::KeywordFor);
+                let (ident_tok, ident_name) = self
+                    .next()
+                    .expect("Tried to parse identifier, but there were no more tokens");
+                assert_eq!(
+                    ident_tok,
+                    Token::Ident,
+                    "Expected identifier at start of type, but found `{}`",
+                    ident_tok
+                );
+                let (in_tok, _) = self
+                    .next()
+                    .expect("Tried to parse `in`, but there were no more tokens");
+                assert_eq!(
+                    in_tok,
+                    Token::KeywordIn,
+                    "Expected `in` after identifier, but found `{}`",
+                    in_tok
+                );
+                let stream = self.expression();
+                assert!(
+                    self.at(Token::LeftCurlyBracket),
+                    "Expected block after for header"
+                );
+                let body = match self.statement() {
+                    ast::Stmt::Block { stmts } => stmts,
+                    _ => unreachable!(),
+                };
+                ast::Stmt::ForLoop {
+                    var_name: ident_name.to_string(),
+                    stream: stream,
+                    stmts: body,
+                }
+            }
             _ => unreachable!(),
         }
     }

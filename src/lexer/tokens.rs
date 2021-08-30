@@ -2,11 +2,11 @@ use logos::Logos;
 
 #[derive(Debug, PartialEq, Logos, Copy, Clone)]
 pub enum Token {
+    #[regex(r"[ \t\n\f]+", logos::skip)]
+    // Whitespace,
     #[error]
     Error,
 
-    #[regex(r"[ \t\n\f]+", logos::skip)]
-    // Whitespace,
     #[regex("[a-zA-Z][a-zA-Z0-9_]*")]
     Ident,
     #[regex("[0-9_]+", |lex| lex.slice().replace('_', "").parse())]

@@ -51,6 +51,11 @@ pub enum Stmt {
     YieldStmt {
         value: Expr,
     },
+    ForLoop {
+        var_name: String,
+        stream: Expr,
+        stmts: Vec<Stmt>,
+    },
     Block {
         stmts: Vec<Stmt>,
     },

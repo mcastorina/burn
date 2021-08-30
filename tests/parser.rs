@@ -423,3 +423,32 @@ fn parse_import() {
         Item::Import(vec!["foo".to_string(), "bar".to_string()])
     );
 }
+
+#[test]
+fn parse_for() {
+    fn parse(input: &str) -> Stmt {
+        let mut parser = Parser::new(input);
+        parser.statement()
+    }
+    assert_eq!(
+        parse("for foo in bar { yield foo; }"),
+        Stmt::ForLoop {
+            var_name: "foo".to_string(),
+            stream: Expr::Ident("bar".to_string()),
+            stmts: vec![Stmt::YieldStmt {
+                value: Expr::Ident("foo".to_string())
+            }],
+        }
+    );
+    assert_eq!(
+        parse("for foo in bar() {}"),
+        Stmt::ForLoop {
+            var_name: "foo".to_string(),
+            stream: Expr::FnCall {
+                fn_name: "bar".to_string(),
+                args: Vec::new(),
+            },
+            stmts: Vec::new(),
+        }
+    );
+}
