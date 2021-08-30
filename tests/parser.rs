@@ -272,7 +272,7 @@ fn parse_fns() {
 
     let func = parse(
         r#"
-        fn foo(a int, b stream<u8>) {
+        fn foo(a int, b stream<u8>) stream<u8> {
             x := 1 + 2;
             x = x + 1;
             x = x + 1;
@@ -285,6 +285,7 @@ fn parse_fns() {
             name,
             parameters,
             body,
+            return_type,
         } => {
             assert_eq!(name, "foo");
             assert_eq!(parameters.len(), 2);
@@ -312,6 +313,16 @@ fn parse_fns() {
                 )
             );
             assert_eq!(body.len(), 3);
+            assert_eq!(
+                return_type,
+                Some(Type {
+                    name: "stream".to_string(),
+                    generics: vec![Type {
+                        name: "u8".to_string(),
+                        generics: Vec::new(),
+                    }],
+                })
+            );
         }
     }
 }

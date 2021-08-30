@@ -133,6 +133,15 @@ where
                 }
                 self.consume(Token::RightParen);
                 assert!(
+                    self.at(Token::LeftCurlyBracket) || self.at(Token::Ident),
+                    "Expected block or return type after function header"
+                );
+                let return_type = if self.at(Token::Ident) {
+                    Some(self.type_())
+                } else {
+                    None
+                };
+                assert!(
                     self.at(Token::LeftCurlyBracket),
                     "Expected block after function header"
                 );
@@ -144,6 +153,7 @@ where
                     name: name.to_string(),
                     parameters,
                     body,
+                    return_type,
                 }
             }
             _ => unreachable!(),
