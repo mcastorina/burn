@@ -1,5 +1,5 @@
 use burn::lexer::Token;
-use burn::parser::ast::{Expr, Lit, Stmt};
+use burn::parser::ast::{Expr, Item, Lit, Stmt, Type};
 use burn::parser::Parser;
 
 #[test]
@@ -260,5 +260,58 @@ fn parse_statements() {
             };
         }
         _ => unreachable!(),
+    }
+}
+
+#[test]
+fn parse_fns() {
+    fn parse(input: &str) -> Item {
+        let mut parser = Parser::new(input);
+        parser.item()
+    }
+
+    let func = parse(
+        r#"
+        fn foo(a int, b stream<u8>) {
+            x := 1 + 2;
+            x = x + 1;
+            x = x + 1;
+        }
+    "#,
+    );
+
+    match func {
+        Item::Function {
+            name,
+            parameters,
+            body,
+        } => {
+            assert_eq!(name, "foo");
+            assert_eq!(parameters.len(), 2);
+            assert_eq!(
+                parameters[0],
+                (
+                    "a".to_string(),
+                    Type {
+                        name: "int".to_string(),
+                        generics: Vec::new(),
+                    }
+                )
+            );
+            assert_eq!(
+                parameters[1],
+                (
+                    "b".to_string(),
+                    Type {
+                        name: "stream".to_string(),
+                        generics: vec![Type {
+                            name: "u8".to_string(),
+                            generics: Vec::new(),
+                        }],
+                    }
+                )
+            );
+            assert_eq!(body.len(), 3);
+        }
     }
 }

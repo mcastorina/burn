@@ -72,4 +72,81 @@ where
             _ => unreachable!(),
         }
     }
+
+    pub fn type_(&mut self) -> ast::Type {
+        let (ident, name) = self
+            .next()
+            .expect("Tried to parse type, but there were no more tokens");
+        assert_eq!(
+            ident,
+            Token::Ident,
+            "Expected identifier at start of type, but found `{}`",
+            ident
+        );
+        let mut generics = Vec::new();
+        if self.at(Token::LeftAngleBracket) {
+            self.consume(Token::LeftAngleBracket);
+            while !self.at(Token::RightAngleBracket) {
+                generics.push(self.type_());
+                if self.at(Token::Comma) {
+                    self.consume(Token::Comma);
+                }
+            }
+            self.consume(Token::RightAngleBracket);
+        }
+        ast::Type {
+            name: name.to_string(),
+            generics,
+        }
+    }
+
+    pub fn item(&mut self) -> ast::Item {
+        let mut parameters = Vec::new();
+        match self.peek() {
+            Token::KeywordFn => {
+                self.consume(Token::KeywordFn);
+                let (ident, name) = self
+                    .next()
+                    .expect("Tried to parse function name, but there were no more tokens");
+                assert_eq!(
+                    ident,
+                    Token::Ident,
+                    "Expected identifier as function name, but found `{}`",
+                    ident
+                );
+                self.consume(Token::LeftParen);
+                while !self.at(Token::RightParen) {
+                    let (param, param_name) = self
+                        .next()
+                        .expect("Tried to parse function parameter, but there were no more tokens");
+                    assert_eq!(
+                        param,
+                        Token::Ident,
+                        "Expected identifier as function parameter, but found `{}`",
+                        param
+                    );
+                    let param_type = self.type_();
+                    parameters.push((param_name.to_string(), param_type));
+                    if self.at(Token::Comma) {
+                        self.consume(Token::Comma);
+                    }
+                }
+                self.consume(Token::RightParen);
+                assert!(
+                    self.at(Token::LeftCurlyBracket),
+                    "Expected block after function header"
+                );
+                let body = match self.statement() {
+                    ast::Stmt::Block { stmts } => stmts,
+                    _ => unreachable!(),
+                };
+                ast::Item::Function {
+                    name: name.to_string(),
+                    parameters,
+                    body,
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
 }

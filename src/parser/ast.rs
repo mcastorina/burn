@@ -49,6 +49,21 @@ pub enum Stmt {
     },
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Item {
+    Function {
+        name: String,
+        parameters: Vec<(String, Type)>,
+        body: Vec<Stmt>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Type {
+    pub name: String,
+    pub generics: Vec<Type>,
+}
+
 use std::fmt::{Display, Error, Formatter};
 impl Display for Expr {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
