@@ -274,8 +274,8 @@ fn parse_fns() {
         r#"
         fn foo(a int, b stream<u8>) stream<u8> {
             x := 1 + 2;
-            x = x + 1;
-            return x;
+            yield x;
+            return b;
         }
     "#,
     );
@@ -324,11 +324,17 @@ fn parse_fns() {
             );
             assert_eq!(body.len(), 3);
             assert_eq!(
+                body[1],
+                Stmt::YieldStmt {
+                    value: Expr::Ident("x".to_string()),
+                }
+            );
+            assert_eq!(
                 body[2],
                 Stmt::ReturnStmt {
-                    value: Some(Expr::Ident("x".to_string())),
+                    value: Some(Expr::Ident("b".to_string())),
                 }
-            )
+            );
         }
     }
 }

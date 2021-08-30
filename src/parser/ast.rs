@@ -47,6 +47,9 @@ pub enum Stmt {
     ReturnStmt {
         value: Option<Expr>,
     },
+    YieldStmt {
+        value: Expr,
+    },
     Block {
         stmts: Vec<Stmt>,
     },

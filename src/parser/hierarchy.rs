@@ -80,6 +80,12 @@ where
                     ast::Stmt::ReturnStmt { value: Some(expr) }
                 }
             }
+            Token::KeywordYield => {
+                self.consume(Token::KeywordYield);
+                let expr = self.expression();
+                self.consume(Token::Semicolon);
+                ast::Stmt::YieldStmt { value: expr }
+            }
             _ => unreachable!(),
         }
     }
