@@ -11,10 +11,8 @@ a meaningful way.
 
 ### Example
 ```go
-import sinks;
-
 fn main() {
-    'Hello, world!' -> sinks::stdout();
+    'Hello, world!' -> SINKS::stdout();
 }
 ```
 
@@ -31,4 +29,7 @@ string literal in Burn is `stream<u8>`. This makes interchanging input
 streams much easier; a useful feature for testing.
 
 ## Progress and Current State
-This document represents the planned goals of Burn. At this time, it is merely an idea.
+- [x] Lexing
+- [x] Parsing
+- [ ] Checking
+- [ ] Code generation

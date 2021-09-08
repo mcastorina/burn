@@ -1,5 +1,3 @@
-import sinks;
-
 fn main() {
-    'Hello, world!' -> sinks::stdout();
+    'Hello, world!' -> SINKS::stdout();
 }

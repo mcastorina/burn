@@ -1,6 +1,3 @@
-import sources;
-import sinks;
-
 fn fibonacci(n u32) u32 {
     if n <= 1 {
         return 1;
@@ -9,13 +6,13 @@ fn fibonacci(n u32) u32 {
 }
 
 fn main() {
-    // for convenience, sources::args() is already split by whitespace
-    // but sources::raw_args() is not
-    args := sources::args().skip(1); // stream<string>
+    // for convenience, SOURCES::args() is already split by whitespace
+    // but SOURCES::raw_args() is not
+    args := SOURCES::args().skip(1); // stream<string>
 
     // num knows it is u32 because it is used in fibonacci
     num := args.get().unwrap();
 
     // convert u32 to an ascii stream
-    fibonacci(num).ascii().chain('\n') -> sinks::stdout();
+    fibonacci(num).ascii().chain('\n') -> SINKS::stdout();
 }

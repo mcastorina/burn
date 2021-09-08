@@ -1,6 +1,3 @@
-import sources;
-import sinks;
-
 // Rotates each byte by 13
 fn rot13(input stream<u8>) stream<u8> {
     for byte in input {
@@ -16,8 +13,8 @@ fn rot13(input stream<u8>) stream<u8> {
 }
 
 fn main() {
-    // syntactic sugar for sinks::stdout(rot13(sources::stdin()))
-    sources::stdin() -> rot13() -> sinks::stdout();
+    // syntactic sugar for SINKS::stdout(rot13(SOURCES::stdin()))
+    SOURCES::stdin() -> rot13() -> SINKS::stdout();
 }
 
 // #[test]

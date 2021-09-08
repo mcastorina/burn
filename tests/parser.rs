@@ -204,6 +204,7 @@ fn parse_arithmetic() {
     assert_eq!(parse("-10 + 4").to_string(), "((-10) + 4)");
     assert_eq!(parse("4 * -10").to_string(), "(4 * (-10))");
     assert_eq!(parse("1 + 2!").to_string(), "(1 + (2!))");
+    assert_eq!(parse("- -1 * 2").to_string(), "((-(-1)) * 2)");
 }
 
 #[test]
