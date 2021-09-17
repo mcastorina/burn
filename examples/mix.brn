@@ -1,14 +1,14 @@
 // Interleaves and combines streams.
 // This function stops when either stream ends.
-fn mix(a stream<u8>, b stream<u8>) stream<u8> {
-    while !a.empty?() && !b.empty?() {
-        yield a.get().unwrap();
-        yield b.get().unwrap();
+fn mix(a stream<u8>, b stream<u8>) -> (out stream<u8>) {
+    while !a.eof() && !b.eof() {
+        a.next() -> out;
+        b.next() -> out;
     }
 }
 
 fn main() {
-    mix(SOURCES::stdin(), 'foo'.cycle()) -> SINKS::stdout();
+    (SOURCES::stdin(), 'foo'.cycle()) -> mix() -> SINKS::stdout();
 }
 
 // #[test]

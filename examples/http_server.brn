@@ -1,0 +1,35 @@
+// Parse HTTP GET requests for `/path/to/file` and returns whether it
+// was found and `path/to/file`
+fn parse(input stream<u8>) -> (found bool, out stream<u8>) {
+    words := input.split(' ');
+    if words.next() != 'GET' {
+        return false, 'HTTP/1.0 501 Unsupported Method\r\n';
+    }
+    path := words.next();
+    if !words.next().starts_with('HTTP/1.') {
+        return false, 'HTTP/1.0 400 Bad Request\r\n'
+    }
+    return true, path.skip(1)
+}
+
+fn serve(ok bool, data stream<u8>) (out stream<u8>) {
+    if !ok {
+        // pass data directly to out
+        return data;
+    }
+    exists, contents := SOURCES::file(data);
+    if !exists {
+        return 'HTTP/1.0 404 Not Found\r\n'
+    }
+    'HTTP/1.0 200 OK\r\nContent-Length: ' -> out;
+    contents.len().ascii()                -> out;
+    '\r\n\r\n'                            -> out;
+    contents                              -> out;
+}
+
+fn main() {
+    while true {
+        input, output := SOURCES::tcp(8000);
+        input -> parse() -> serve() -> output;
+    }
+}

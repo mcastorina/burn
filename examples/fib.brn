@@ -1,4 +1,4 @@
-fn fibonacci(n u32) u32 {
+fn fibonacci(n u32) -> (out u32) {
     if n <= 1 {
         return 1;
     }
@@ -8,9 +8,10 @@ fn fibonacci(n u32) u32 {
 fn main() {
     // for convenience, SOURCES::args() is already split by whitespace
     // but SOURCES::raw_args() is not
-    args := SOURCES::args().skip(1); // stream<string>
+    args := SOURCES::args().skip(1); // stream<stream<u8>>
 
-    // num knows it is u32 because it is used in fibonacci
+    // num is auto-converted from stream<u8> to u32 because it is used
+    // in fibonacci
     num := args.get().unwrap();
 
     // convert u32 to an ascii stream
