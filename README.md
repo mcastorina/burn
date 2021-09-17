@@ -72,6 +72,7 @@ The arrow operator `->` has three purposes:
 ```go
 fn main() {
     ('hello', 'world') -> mix();
+    // Equivalent to mix('hello', 'world');
 }
 ```
 
@@ -88,7 +89,7 @@ fn main() {
 Burn uses special namespaces `SOURCES` and `SINKS` for defining all the
 sources and sinks a programmer may use. Remember this is an experimental
 language, so defining new sources or sinks is not possible. Below is the
-complete list of sources and sinks.
+complete list.
 
 | Function | Returns | Description |
 |:-------- |:------- |:----------- |
@@ -97,15 +98,17 @@ complete list of sources and sinks.
 | `SOURCES::raw_args()` | `stream<u8>` | Command line arguments |
 | `SOURCES::tcp(port int)` | `(input stream<u8>, output stream<u8>)` | Opens a port and accepts a connection, returning the input and output streams associated with the connection |
 | `SOURCES::file(filename stream<u8>)` | `(found bool, data stream<u8>)` | Reads a file from the filesystem |
-| `SINKS::stdout()' | 'stream<u8>` | Standard output |
-| `SINKS::stderr()' | 'stream<u8>` | Standard error |
+| `SINKS::file(filename stream<u8>)` | `stream<u8>` | Writes a file to the filesystem |
+| `SINKS::stdout()` | `stream<u8>` | Standard output |
+| `SINKS::stderr()` | `stream<u8>` | Standard error |
 
 ### stream<T> methods
 
 | Method | Returns | Description |
 |:------ |:------- |:----------- |
 | `next()` | `T` | Reads and consumes the next item in the stream |
-| `get(n u32)` | `T` | Returns the nth item in the stream without consuming any items |
+| `consume(n u32)` | `stream<T>` | Reads and consumes the next `n` items in the stream |
+| `get(n u32)` | `T` | Returns the `nth` item in the stream without consuming any items |
 | `len()` | `u32` | Returns the number of items currently in the stream |
 | `eof()` | `bool` | Returns whether the stream has ended or not (end of file) |
 | `cycle()` | `stream<T>` | Cycles the input stream indefinitely |
