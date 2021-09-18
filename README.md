@@ -10,6 +10,9 @@ fn main() {
 }
 ```
 
+## Building
+Nothing to build, yet!
+
 ## Design
 The design of Burn is very simple as this is a learning experience
 in writing compilers.  The focus of this language is on creating first
@@ -122,3 +125,6 @@ complete list.
 - [ ] Parsing
 - [ ] Checking
 - [ ] Code generation
+
+## Contributing
+Contributions are welcome!
