@@ -105,7 +105,7 @@ complete list.
 | `SINKS::stdout()` | `stream<u8>` | Standard output |
 | `SINKS::stderr()` | `stream<u8>` | Standard error |
 
-### stream<T> methods
+### stream\<T\> methods
 
 | Method | Returns | Description |
 |:------ |:------- |:----------- |
