@@ -19,7 +19,7 @@ When writing to an output, all data is read until an EOF is encountered, then
 the program moves forward.
 
 When writing to multiple outputs at the same time (like in
-[examples/duplicate.brn](./examples/duplicate.brn)), precedence is given
+[examples/duplicate.burn](./examples/duplicate.burn)), precedence is given
 in order from left to right.
 
 ## Stream Design

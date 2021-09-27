@@ -12,7 +12,7 @@ fn main() {
 
     // num is auto-converted from stream<u8> to u32 because it is used
     // in fibonacci
-    num := args.get().unwrap();
+    num := args.get();
 
     // convert u32 to an ascii stream
     fibonacci(num).ascii().chain('\n') -> SINKS::stdout();
