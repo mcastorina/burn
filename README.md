@@ -19,7 +19,8 @@ in writing compilers.  The focus of this language is on creating first
 class support for iterators as a way to logically model data flow through
 a program. The Burn run-time will concurrently read and write streams
 making it easier for programmers to focus on transforming the data in
-a meaningful way.
+a meaningful way. See [DESIGN.md](./DESIGN.md) for more information on the
+technical design of the compiler.
 
 ### Data Types
 * `bool`
@@ -65,6 +66,15 @@ will execute the function as needed to progress the program. In other
 words, you may setup a chain of functions for which data will flow
 through one item at a time, rather than shuffling large buffers.
 
+### Tuples
+Burn uses tuples to group inputs and outputs, however there is no
+`tuple` type. This means you cannot assign a tuple to a variable; it
+must be unpacked. Use `_` to discard unneeded values.
+
+```go
+x, y := unmix(data);
+```
+
 ### Arrow operator
 The arrow operator `->` has three purposes:
 * Function definitions to describe inputs and outputs
@@ -74,8 +84,10 @@ The arrow operator `->` has three purposes:
 **Syntactic sugar**
 ```go
 fn main() {
+    // All equivalent to mix('hello', 'world');
     ('hello', 'world') -> mix();
-    // Equivalent to mix('hello', 'world');
+    'world' -> mix('hello', _);
+    'hello' -> mix(_, 'world');
 }
 ```
 
