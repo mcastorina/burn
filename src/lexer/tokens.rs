@@ -63,26 +63,6 @@ pub enum Token {
     Assign,
     #[token(":=")]
     Declare,
-    #[token("+=")]
-    PlusEqual,
-    #[token("-=")]
-    MinusEqual,
-    #[token("/=")]
-    DivideEqual,
-    #[token("*=")]
-    MultiplyEqual,
-    #[token("^=")]
-    XorEqual,
-    #[token("%=")]
-    PercentEqual,
-    #[token("|=")]
-    OrEqual,
-    #[token("&=")]
-    AndEqual,
-    #[token(">>=")]
-    RightShiftEqual,
-    #[token("<<=")]
-    LeftShiftEqual,
     #[token("{")]
     LeftCurlyBracket,
     #[token("}")]
@@ -125,8 +105,6 @@ pub enum Token {
     KeywordFn,
     #[token("if")]
     KeywordIf,
-    #[token("import")]
-    KeywordImport,
     #[token("in")]
     KeywordIn,
     #[token("none")]
@@ -137,8 +115,6 @@ pub enum Token {
     KeywordTrue,
     #[token("while")]
     KeywordWhile,
-    #[token("yield")]
-    KeywordYield,
 
     EOF,
 }
@@ -177,16 +153,6 @@ impl Display for Token {
             Token::RightShift => write!(f, ">>"),
             Token::Assign => write!(f, "="),
             Token::Declare => write!(f, ":="),
-            Token::PlusEqual => write!(f, "+="),
-            Token::MinusEqual => write!(f, "-="),
-            Token::DivideEqual => write!(f, "/="),
-            Token::MultiplyEqual => write!(f, "*="),
-            Token::XorEqual => write!(f, "^="),
-            Token::PercentEqual => write!(f, "%="),
-            Token::OrEqual => write!(f, "|="),
-            Token::AndEqual => write!(f, "&="),
-            Token::RightShiftEqual => write!(f, ">>="),
-            Token::LeftShiftEqual => write!(f, "<<="),
             Token::LeftCurlyBracket => write!(f, "{{"),
             Token::RightCurlyBracket => write!(f, "}}"),
             Token::LeftParen => write!(f, "("),
@@ -208,16 +174,75 @@ impl Display for Token {
             Token::KeywordFor => write!(f, "for"),
             Token::KeywordFn => write!(f, "fn"),
             Token::KeywordIf => write!(f, "if"),
-            Token::KeywordImport => write!(f, "import"),
             Token::KeywordIn => write!(f, "in"),
             Token::KeywordNone => write!(f, "none"),
             Token::KeywordReturn => write!(f, "return"),
             Token::KeywordTrue => write!(f, "true"),
             Token::KeywordWhile => write!(f, "while"),
-            Token::KeywordYield => write!(f, "yield"),
             Token::EOF => write!(f, "<EOF>"),
         }
     }
+}
+
+#[macro_export]
+macro_rules! T {
+    [error] => { $crate::lexer::Token::Error };
+    // [ws] => { $crate::lexer::Token::Whitespace };
+    [ident] => { $crate::lexer::Token::Ident };
+    [num] => { $crate::lexer::Token::Number };
+    [string] => { $crate::lexer::Token::String };
+    [byte] => { $crate::lexer::Token::Byte };
+    [+] => { $crate::lexer::Token::Plus };
+    [-] => { $crate::lexer::Token::Minus };
+    [*] => { $crate::lexer::Token::Asterisk };
+    [/] => { $crate::lexer::Token::Slash };
+    [%] => { $crate::lexer::Token::Percent };
+    [^] => { $crate::lexer::Token::Caret };
+    [|] => { $crate::lexer::Token::Pipe };
+    [++] => { $crate::lexer::Token::Inc };
+    [--] => { $crate::lexer::Token::Dec };
+    [&&] => { $crate::lexer::Token::And };
+    [||] => { $crate::lexer::Token::Or };
+    [!] => { $crate::lexer::Token::Bang };
+    [~] => { $crate::lexer::Token::Tilde };
+    [?] => { $crate::lexer::Token::Question };
+    [,] => { $crate::lexer::Token::Comma };
+    [;] => { $crate::lexer::Token::Semicolon };
+    [:] => { $crate::lexer::Token::Colon };
+    [::] => { $crate::lexer::Token::DoubleColon };
+    [->] => { $crate::lexer::Token::RightArrow };
+    [&] => { $crate::lexer::Token::Ampersand };
+    [<<] => { $crate::lexer::Token::LeftShift };
+    [>>] => { $crate::lexer::Token::RightShift };
+    [=] => { $crate::lexer::Token::Assign };
+    [:=] => { $crate::lexer::Token::Declare };
+    ['{'] => { $crate::lexer::Token::LeftCurlyBracket };
+    ['}'] => { $crate::lexer::Token::RightCurlyBracket };
+    ['('] => { $crate::lexer::Token::LeftParen };
+    [')'] => { $crate::lexer::Token::RightParen };
+    ['['] => { $crate::lexer::Token::LeftSquarBracket };
+    [']'] => { $crate::lexer::Token::RightSquareBracket };
+    [<] => { $crate::lexer::Token::LeftAngleBracket };
+    [>] => { $crate::lexer::Token::RightAngleBracket };
+    [==] => { $crate::lexer::Token::Equal };
+    [!=] => { $crate::lexer::Token::NotEqual };
+    [>=] => { $crate::lexer::Token::GreaterOrEqual };
+    [<=] => { $crate::lexer::Token::LessOrEqual };
+    [comment] => { $crate::lexer::Token::Comment };
+    [.] => { $crate::lexer::Token::Dot };
+    [break] => { $crate::lexer::Token::KeywordBreak };
+    [continue] => { $crate::lexer::Token::KeywordContinue };
+    [else] => { $crate::lexer::Token::KeywordElse };
+    [false] => { $crate::lexer::Token::KeywordFalse };
+    [for] => { $crate::lexer::Token::KeywordFor };
+    [fn] => { $crate::lexer::Token::KeywordFn };
+    [if] => { $crate::lexer::Token::KeywordIf };
+    [in] => { $crate::lexer::Token::KeywordIn };
+    [none] => { $crate::lexer::Token::KeywordNone };
+    [return] => { $crate::lexer::Token::KeywordReturn };
+    [true] => { $crate::lexer::Token::KeywordTrue };
+    [while] => { $crate::lexer::Token::KeywordWhile };
+    [eof] => { $crate::lexer::Token::EOF };
 }
 
 #[test]
