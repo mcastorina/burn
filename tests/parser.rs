@@ -185,8 +185,8 @@ fn parse_dot_operator() {
         "((1 + (foo . bar)) + baz)"
     );
     assert_eq!(
-        parse("1 ^ foo.bar ^ 2").to_string(),
-        "(1 ^ ((foo . bar) ^ 2))"
+        parse("1 + foo.bar * 2").to_string(),
+        "(1 + ((foo . bar) * 2))"
     );
 }
 
@@ -215,8 +215,8 @@ fn parse_binary_expressions() {
     }
 
     assert_eq!(
-        parse(r#"45 + 3 + 5 * 4^8^9 / 6 > 4 && test - 7 / 4 == "Hallo""#).to_string(),
-        r#"((((45 + 3) + ((5 * (4 ^ (8 ^ 9))) / 6)) > 4) && ((test - (7 / 4)) == "Hallo"))"#
+        parse(r#"45 + 3 + 5 * 6 > 4 && test - 7 / 4 == "Hallo""#).to_string(),
+        r#"((((45 + 3) + (5 * 6)) > 4) && ((test - (7 / 4)) == "Hallo"))"#
     );
     assert_eq!(parse("1 + 2 == 3 + 4").to_string(), "((1 + 2) == (3 + 4))");
     assert_eq!(parse("1 < 2 == 3 > 4").to_string(), "((1 < 2) == (3 > 4))");
@@ -383,7 +383,6 @@ fn parse_fns() {
         r#"
         fn foo(a int, b stream<u8>) stream<u8> {
             x := 1 + 2;
-            yield x;
             return b;
         }
     "#,
@@ -431,15 +430,9 @@ fn parse_fns() {
                     }],
                 })
             );
-            assert_eq!(body.len(), 3);
+            assert_eq!(body.len(), 2);
             assert_eq!(
                 body[1],
-                Stmt::YieldStmt {
-                    value: Expr::Ident("x".to_string()),
-                }
-            );
-            assert_eq!(
-                body[2],
                 Stmt::ReturnStmt {
                     value: Some(Expr::Ident("b".to_string())),
                 }
@@ -450,32 +443,17 @@ fn parse_fns() {
 }
 
 #[test]
-fn parse_import() {
-    fn parse(input: &str) -> Item {
-        let mut parser = Parser::new(input);
-        parser.item()
-    }
-    assert_eq!(parse("import foo;"), Item::Import(vec!["foo".to_string()]));
-    assert_eq!(
-        parse("import foo::bar;"),
-        Item::Import(vec!["foo".to_string(), "bar".to_string()])
-    );
-}
-
-#[test]
 fn parse_for() {
     fn parse(input: &str) -> Stmt {
         let mut parser = Parser::new(input);
         parser.statement()
     }
     assert_eq!(
-        parse("for foo in bar { yield foo; }"),
+        parse("for foo in bar { continue; }"),
         Stmt::ForLoop {
             var_name: "foo".to_string(),
             stream: Expr::Ident("bar".to_string()),
-            stmts: vec![Stmt::YieldStmt {
-                value: Expr::Ident("foo".to_string())
-            }],
+            stmts: vec![Stmt::ContinueStmt],
         }
     );
     assert_eq!(
@@ -500,42 +478,33 @@ fn parse_file() {
 
     let items = parse(
         r#"
-    import sinks;
-
+    fn yay() {}
     fn main() {
-        'Hello, world!' -> sinks::stdout();
+        'Hello, world!' -> SINKS::stdout();
     }
     "#,
     );
 
     assert_eq!(items.len(), 2);
-    assert!(matches!(items[0], Item::Import(..)));
     assert!(matches!(items[1], Item::Function { .. }));
 
     let items = parse(
         r#"
-        import sources;
-        import sinks;
-
         // Rotates each byte by 13
         fn rot13(input stream<u8>) stream<u8> {
             for byte in input {
-                // yield can be used if the return type is a stream
                 if byte >= `a` && byte <= `m` || byte >= `A` && byte <= `M` {
-                    yield byte + 13;
                 } else if byte >= `n` && byte <= `z` || byte >= `N` && byte <= `Z` {
-                    yield byte - 13;
                 } else {
-                    yield byte;
                 }
             }
         }
 
         fn main() {
-            // syntactic sugar for sinks::stdout(rot13(sources::stdin()))
-            sources::stdin() -> rot13() -> sinks::stdout();
+            // syntactic sugar for SINKS::stdout(rot13(SOURCES::stdin()))
+            SOURCES::stdin() -> rot13() -> SINKS::stdout();
         }
     "#,
     );
-    assert_eq!(items.len(), 4);
+    assert_eq!(items.len(), 2);
 }

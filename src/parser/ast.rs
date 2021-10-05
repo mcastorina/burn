@@ -48,9 +48,7 @@ pub enum Stmt {
     ReturnStmt {
         value: Option<Expr>,
     },
-    YieldStmt {
-        value: Expr,
-    },
+    ContinueStmt,
     ForLoop {
         var_name: String,
         stream: Expr,
@@ -118,6 +116,8 @@ impl Display for Lit {
 
 #[test]
 fn display() {
+    use crate::T;
+
     assert_eq!(Expr::Literal(Lit::Int(1)).to_string(), "1");
     assert_eq!(
         Expr::Literal(Lit::Str("foo".to_string())).to_string(),
@@ -125,7 +125,7 @@ fn display() {
     );
     assert_eq!(
         Expr::InfixOp {
-            op: Token::Plus,
+            op: T![+],
             lhs: Box::new(Expr::Literal(Lit::Int(1))),
             rhs: Box::new(Expr::Literal(Lit::Int(2))),
         }

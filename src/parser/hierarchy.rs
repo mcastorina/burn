@@ -1,6 +1,6 @@
 use super::ast;
 use super::Parser;
-use crate::lexer::Token;
+use crate::{lexer::Token, T};
 
 impl<'input, I> Parser<'input, I>
 where
@@ -8,51 +8,48 @@ where
 {
     pub fn statement(&mut self) -> ast::Stmt {
         match self.peek() {
-            Token::Ident => {
+            T![ident] => {
                 let (_, ident) = self.next().unwrap();
                 match self.peek() {
-                    op @ Token::Declare => {
+                    op @ T![:=] => {
                         self.consume(op);
                         let value = self.expression();
-                        self.consume(Token::Semicolon);
+                        self.consume(T![;]);
                         ast::Stmt::Declaration {
                             var_name: ident.to_string(),
                             value,
                         }
                     }
-                    op @ Token::Assign => {
+                    op @ T![=] => {
                         self.consume(op);
                         let value = self.expression();
-                        self.consume(Token::Semicolon);
+                        self.consume(T![;]);
                         ast::Stmt::Assignment {
                             var_name: ident.to_string(),
                             value,
                         }
                     }
                     _ => {
-                        self.push((Token::Ident, ident));
+                        self.push((T![ident], ident));
                         let expr = self.expression();
-                        self.consume(Token::Semicolon);
+                        self.consume(T![;]);
                         ast::Stmt::Expr(expr)
                     }
                 }
             }
-            Token::KeywordIf => {
-                self.consume(Token::KeywordIf);
+            T![if] => {
+                self.consume(T![if]);
                 let condition = self.expression();
-                assert!(
-                    self.at(Token::LeftCurlyBracket),
-                    "Expected a block after `if` statement"
-                );
+                assert!(self.at(T!['{']), "Expected a block after `if` statement");
                 let body = match self.statement() {
                     ast::Stmt::Block { stmts } => stmts,
                     _ => unreachable!(),
                 };
 
-                let else_stmt = if self.at(Token::KeywordElse) {
-                    self.consume(Token::KeywordElse);
+                let else_stmt = if self.at(T![else]) {
+                    self.consume(T![else]);
                     assert!(
-                        self.at(Token::KeywordIf) || self.at(Token::LeftCurlyBracket),
+                        self.at(T![if]) || self.at(T!['{']),
                         "Expected a block or an `if` after `else` statement"
                     );
                     Some(Box::new(self.statement()))
@@ -65,57 +62,45 @@ where
                     else_stmt,
                 }
             }
-            Token::LeftCurlyBracket => {
-                self.consume(Token::LeftCurlyBracket);
+            T!['{'] => {
+                self.consume(T!['{']);
                 let mut stmts = Vec::new();
-                while !self.at(Token::RightCurlyBracket) {
+                while !self.at(T!['}']) {
                     stmts.push(self.statement());
                 }
-                self.consume(Token::RightCurlyBracket);
+                self.consume(T!['}']);
                 ast::Stmt::Block { stmts }
             }
-            Token::KeywordReturn => {
-                self.consume(Token::KeywordReturn);
-                if self.at(Token::Semicolon) {
-                    self.consume(Token::Semicolon);
+            T![return] => {
+                self.consume(T![return]);
+                if self.at(T![;]) {
+                    self.consume(T![;]);
                     ast::Stmt::ReturnStmt { value: None }
                 } else {
                     let expr = self.expression();
-                    self.consume(Token::Semicolon);
+                    self.consume(T![;]);
                     ast::Stmt::ReturnStmt { value: Some(expr) }
                 }
             }
-            Token::KeywordYield => {
-                self.consume(Token::KeywordYield);
-                let expr = self.expression();
-                self.consume(Token::Semicolon);
-                ast::Stmt::YieldStmt { value: expr }
+            T![continue] => {
+                self.consume(T![continue]);
+                self.consume(T![;]);
+                ast::Stmt::ContinueStmt
             }
-            Token::KeywordFor => {
-                self.consume(Token::KeywordFor);
+            T![for] => {
+                self.consume(T![for]);
                 let (ident_tok, ident_name) = self
                     .next()
                     .expect("Tried to parse identifier, but there were no more tokens");
                 assert_eq!(
                     ident_tok,
-                    Token::Ident,
+                    T![ident],
                     "Expected identifier at start of type, but found `{}`",
                     ident_tok
                 );
-                let (in_tok, _) = self
-                    .next()
-                    .expect("Tried to parse `in`, but there were no more tokens");
-                assert_eq!(
-                    in_tok,
-                    Token::KeywordIn,
-                    "Expected `in` after identifier, but found `{}`",
-                    in_tok
-                );
+                self.consume(T![in]);
                 let stream = self.expression();
-                assert!(
-                    self.at(Token::LeftCurlyBracket),
-                    "Expected block after for header"
-                );
+                assert!(self.at(T!['{']), "Expected block after for header");
                 let body = match self.statement() {
                     ast::Stmt::Block { stmts } => stmts,
                     _ => unreachable!(),
@@ -128,7 +113,7 @@ where
             }
             _ => {
                 let expr = self.expression();
-                self.consume(Token::Semicolon);
+                self.consume(T![;]);
                 ast::Stmt::Expr(expr)
             }
         }
@@ -140,20 +125,20 @@ where
             .expect("Tried to parse type, but there were no more tokens");
         assert_eq!(
             ident,
-            Token::Ident,
+            T![ident],
             "Expected identifier at start of type, but found `{}`",
             ident
         );
         let mut generics = Vec::new();
-        if self.at(Token::LeftAngleBracket) {
-            self.consume(Token::LeftAngleBracket);
-            while !self.at(Token::RightAngleBracket) {
+        if self.at(T![<]) {
+            self.consume(T![<]);
+            while !self.at(T![>]) {
                 generics.push(self.type_());
-                if self.at(Token::Comma) {
-                    self.consume(Token::Comma);
+                if self.at(T![,]) {
+                    self.consume(T![,]);
                 }
             }
-            self.consume(Token::RightAngleBracket);
+            self.consume(T![>]);
         }
         ast::Type {
             name: name.to_string(),
@@ -164,48 +149,45 @@ where
     pub fn item(&mut self) -> ast::Item {
         let mut parameters = Vec::new();
         match self.peek() {
-            Token::KeywordFn => {
-                self.consume(Token::KeywordFn);
+            T![fn] => {
+                self.consume(T![fn]);
                 let (ident, name) = self
                     .next()
                     .expect("Tried to parse function name, but there were no more tokens");
                 assert_eq!(
                     ident,
-                    Token::Ident,
+                    T![ident],
                     "Expected identifier as function name, but found `{}`",
                     ident
                 );
-                self.consume(Token::LeftParen);
-                while !self.at(Token::RightParen) {
+                self.consume(T!['(']);
+                while !self.at(T![')']) {
                     let (param, param_name) = self
                         .next()
                         .expect("Tried to parse function parameter, but there were no more tokens");
                     assert_eq!(
                         param,
-                        Token::Ident,
+                        T![ident],
                         "Expected identifier as function parameter, but found `{}`",
                         param
                     );
                     let param_type = self.type_();
                     parameters.push((param_name.to_string(), param_type));
-                    if self.at(Token::Comma) {
-                        self.consume(Token::Comma);
+                    if self.at(T![,]) {
+                        self.consume(T![,]);
                     }
                 }
-                self.consume(Token::RightParen);
+                self.consume(T![')']);
                 assert!(
-                    self.at(Token::LeftCurlyBracket) || self.at(Token::Ident),
+                    self.at(T!['{']) || self.at(T![ident]),
                     "Expected block or return type after function header"
                 );
-                let return_type = if self.at(Token::Ident) {
+                let return_type = if self.at(T![ident]) {
                     Some(self.type_())
                 } else {
                     None
                 };
-                assert!(
-                    self.at(Token::LeftCurlyBracket),
-                    "Expected block after function header"
-                );
+                assert!(self.at(T!['{']), "Expected block after function header");
                 let body = match self.statement() {
                     ast::Stmt::Block { stmts } => stmts,
                     _ => unreachable!(),
@@ -217,41 +199,13 @@ where
                     return_type,
                 }
             }
-            Token::KeywordImport => {
-                self.consume(Token::KeywordImport);
-                let (ident_tok, ident_name) = self
-                    .next()
-                    .expect("Expected an identifier after `import`, but there were no more tokens");
-                assert_eq!(
-                    ident_tok,
-                    Token::Ident,
-                    "Expected an identifier after `import`, but found `{}`",
-                    ident_name
-                );
-                let mut idents = vec![ident_name.to_string()];
-                while self.peek() == Token::DoubleColon {
-                    self.consume(Token::DoubleColon);
-                    let (ident_tok, ident_name) = self.next().expect(
-                        "Expected an identifier after `import`, but there were no more tokens",
-                    );
-                    assert_eq!(
-                        ident_tok,
-                        Token::Ident,
-                        "Expected an identifier after `import`, but found `{}`",
-                        ident_name
-                    );
-                    idents.push(ident_name.to_string());
-                }
-                self.consume(Token::Semicolon);
-                ast::Item::Import(idents)
-            }
             _ => unreachable!(),
         }
     }
 
     pub fn file(&mut self) -> Vec<ast::Item> {
         let mut items = Vec::new();
-        while !self.at(Token::EOF) {
+        while !self.at(T![eof]) {
             let item = self.item();
             items.push(item);
         }

@@ -2,7 +2,7 @@ pub mod ast;
 mod expressions;
 mod hierarchy;
 
-use crate::lexer::Token;
+use crate::{lexer::Token, T};
 use logos::{Logos, SpannedIter};
 use std::iter::Peekable;
 
@@ -26,7 +26,7 @@ where
                 .tokens
                 .peek()
                 .map(|(token, _)| *token)
-                .unwrap_or(Token::EOF),
+                .unwrap_or(T![eof]),
         }
     }
     pub fn at(&mut self, kind: Token) -> bool {

@@ -1,17 +1,6 @@
 use super::ast;
 use super::Parser;
-use crate::lexer::Token;
-
-// TODO:
-// expression     → equality ;
-// equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-// comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-// term           → factor ( ( "-" | "+" ) factor )* ;
-// factor         → unary ( ( "/" | "*" ) unary )* ;
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
-// primary        → NUMBER | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" ;
+use crate::{lexer::Token, T};
 
 impl<'input, I> Parser<'input, I>
 where
@@ -22,48 +11,46 @@ where
     }
     fn parse_expression(&mut self, binding_power: u8) -> ast::Expr {
         let mut lhs = match self.peek() {
-            Token::Number(_) | Token::String | Token::Byte => {
+            T![num(_)] | T![string] | T![byte] => {
                 let (literal_token, literal_text) = self.next().unwrap();
                 let lit = match literal_token {
-                    Token::Number(n) => ast::Lit::Int(n),
-                    Token::String => {
+                    T![num(n)] => ast::Lit::Int(n),
+                    T![string] => {
                         ast::Lit::Str(literal_text[1..literal_text.len() - 1].to_string())
                     }
-                    Token::Byte => {
-                        ast::Lit::Byt(literal_text[1..literal_text.len() - 1].to_string())
-                    }
+                    T![byte] => ast::Lit::Byt(literal_text[1..literal_text.len() - 1].to_string()),
                     _ => unreachable!(),
                 };
                 ast::Expr::Literal(lit)
             }
-            Token::Ident => {
+            T![ident] => {
                 let (_, ident_name) = self.next().unwrap();
-                if !self.at(Token::LeftParen) {
+                if !self.at(T!['(']) {
                     ast::Expr::Ident(ident_name.to_string())
                 } else {
                     // function call
                     let mut args = Vec::new();
-                    self.consume(Token::LeftParen);
-                    while !self.at(Token::RightParen) {
+                    self.consume(T!['(']);
+                    while !self.at(T![')']) {
                         let arg = self.parse_expression(0);
                         args.push(arg);
-                        if self.at(Token::Comma) {
-                            self.consume(Token::Comma);
-                        } else if !self.at(Token::RightParen) {
+                        if self.at(T![,]) {
+                            self.consume(T![,]);
+                        } else if !self.at(T![')']) {
                             panic!("Unexpected token");
                         }
                     }
-                    self.consume(Token::RightParen);
+                    self.consume(T![')']);
                     ast::Expr::FnCall {
                         fn_name: ident_name.to_string(),
                         args,
                     }
                 }
             }
-            Token::LeftParen => {
-                self.consume(Token::LeftParen);
+            T!['('] => {
+                self.consume(T!['(']);
                 let expr = self.parse_expression(0);
-                self.consume(Token::RightParen);
+                self.consume(T![')']);
                 expr
             }
             op @ Token::Plus | op @ Token::Minus | op @ Token::Bang => {
@@ -80,29 +67,24 @@ where
 
         loop {
             let op = match self.peek() {
-                op @ Token::Plus
-                | op @ Token::Minus
-                | op @ Token::Asterisk
-                | op @ Token::Slash
-                | op @ Token::Caret
-                | op @ Token::Equal
-                | op @ Token::NotEqual
-                | op @ Token::And
-                | op @ Token::Or
-                | op @ Token::LeftAngleBracket
-                | op @ Token::LessOrEqual
-                | op @ Token::RightAngleBracket
-                | op @ Token::GreaterOrEqual
-                | op @ Token::Bang
-                | op @ Token::Dot
-                | op @ Token::DoubleColon
-                | op @ Token::RightArrow => op,
-                Token::EOF
-                | Token::RightParen
-                | Token::RightCurlyBracket
-                | Token::LeftCurlyBracket
-                | Token::Comma
-                | Token::Semicolon => break,
+                op @ T![+]
+                | op @ T![-]
+                | op @ T![*]
+                | op @ T![/]
+                | op @ T![^]
+                | op @ T![==]
+                | op @ T![!=]
+                | op @ T![&&]
+                | op @ T![||]
+                | op @ T![<]
+                | op @ T![<=]
+                | op @ T![>]
+                | op @ T![>=]
+                | op @ T![!]
+                | op @ T![.]
+                | op @ T![::]
+                | op @ T![->] => op,
+                T![eof] | T![')'] | T!['}'] | T!['{'] | T![,] | T![;] => break,
                 kind => panic!("Unknown operator: `{}`", kind),
             };
 
@@ -124,7 +106,7 @@ where
                 }
                 self.consume(op);
                 let mut rhs = self.parse_expression(right_bp);
-                if op == Token::RightArrow {
+                if op == T![->] {
                     if let ast::Expr::FnCall {
                         fn_name: _,
                         ref mut args,
@@ -138,12 +120,12 @@ where
                         loop {
                             match expr {
                                 ast::Expr::InfixOp {
-                                    op: Token::Dot,
+                                    op: T![.],
                                     lhs: _,
                                     rhs,
                                 }
                                 | ast::Expr::InfixOp {
-                                    op: Token::DoubleColon,
+                                    op: T![::],
                                     lhs: _,
                                     rhs,
                                 } => {
@@ -192,31 +174,27 @@ trait Operator {
 impl Operator for Token {
     fn prefix_binding_power(&self) -> ((), u8) {
         match self {
-            Token::Plus | Token::Minus | Token::Bang => ((), 51),
+            T![+] | T![-] | T![!] => ((), 51),
             _ => unreachable!("Not a prefix operator: `{:?}`", self),
         }
     }
     fn infix_binding_power(&self) -> Option<(u8, u8)> {
         let result = match self {
-            Token::Or => (1, 2),
-            Token::And => (3, 4),
-            Token::Equal | Token::NotEqual => (5, 6),
-            Token::LeftAngleBracket
-            | Token::RightAngleBracket
-            | Token::LessOrEqual
-            | Token::GreaterOrEqual => (7, 8),
-            Token::RightArrow => (9, 10),
-            Token::Plus | Token::Minus => (11, 12),
-            Token::Asterisk | Token::Slash => (13, 14),
-            Token::Caret => (22, 21), // <- This binds stronger to the left!
-            Token::Dot | Token::DoubleColon => (24, 23),
+            T![||] => (1, 2),
+            T![&&] => (3, 4),
+            T![==] | T![!=] => (5, 6),
+            T![<] | T![>] | T![<=] | T![>=] => (7, 8),
+            T![->] => (9, 10),
+            T![+] | T![-] => (11, 12),
+            T![*] | T![/] => (13, 14),
+            T![.] | T![::] => (24, 23),
             _ => return None,
         };
         Some(result)
     }
     fn postfix_binding_power(&self) -> Option<(u8, ())> {
         let result = match self {
-            Token::Bang => (101, ()),
+            T![!] => (101, ()),
             _ => return None,
         };
         Some(result)

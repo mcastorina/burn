@@ -189,7 +189,7 @@ macro_rules! T {
     [error] => { $crate::lexer::Token::Error };
     // [ws] => { $crate::lexer::Token::Whitespace };
     [ident] => { $crate::lexer::Token::Ident };
-    [num] => { $crate::lexer::Token::Number };
+    [num($i:pat)] => { $crate::lexer::Token::Number($i) };
     [string] => { $crate::lexer::Token::String };
     [byte] => { $crate::lexer::Token::Byte };
     [+] => { $crate::lexer::Token::Plus };
