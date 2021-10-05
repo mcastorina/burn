@@ -133,7 +133,7 @@ complete list.
 
 ## Progress and Current State
 - [x] Design
-- [ ] Lexing
+- [x] Lexing
 - [ ] Parsing
 - [ ] Checking
 - [ ] Code generation
