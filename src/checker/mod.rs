@@ -17,7 +17,6 @@ pub fn check(item: &ast::Item) {
             body,
             return_type,
         } => check_fn(name, parameters, body, return_type),
-        ast::Item::Import { .. } => panic!("Imports are not supported"),
     }
 }
 
@@ -39,13 +38,14 @@ fn check_fn(
 fn check_type(mut typ: ast::Type) {
     match typ.name.as_ref() {
         "bool" | "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => {
-            if typ.generics.len() != 0 {
-                panic!("Basic types cannot have generics");
-            }
+            check_basic_type(typ);
         }
         "option" => {
             if typ.generics.len() != 1 {
                 panic!("Expected exactly one generic for `option` type");
+            }
+            for generic in typ.generics {
+                check_type(generic);
             }
         }
         "stream" => {
@@ -59,10 +59,21 @@ fn check_type(mut typ: ast::Type) {
             if typ.generics.len() != 1 {
                 panic!("Expected exactly one generic for `stream` type");
             }
+            for generic in typ.generics {
+                check_basic_type(generic);
+            }
         }
         t => panic!("Unrecognized type: {}", t),
     }
-    for generic in typ.generics {
-        check_type(generic);
+}
+
+fn check_basic_type(typ: ast::Type) {
+    match typ.name.as_ref() {
+        "bool" | "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => {
+            if typ.generics.len() != 0 {
+                panic!("Basic types cannot have generics");
+            }
+        }
+        t => panic!("Unrecognized basic type: {}", t),
     }
 }
