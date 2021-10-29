@@ -66,7 +66,7 @@ pub enum Item {
         name: String,
         parameters: Vec<(String, Type)>,
         body: Vec<Stmt>,
-        return_type: Option<Type>,
+        return_params: Vec<(String, Type)>,
     },
 }
 

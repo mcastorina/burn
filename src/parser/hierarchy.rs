@@ -146,59 +146,74 @@ where
         }
     }
 
-    pub fn item(&mut self) -> ast::Item {
+    // parse function definitions
+    // - input parameters and return parameters are optional
+    // fn fn_name(ident ident_type*) -> (ident ident_type) { block }
+    // or
+    // fn fn_name(ident ident_type*) { block }
+    fn fn_definition(&mut self) -> ast::Item {
+        self.consume(T![fn]);
+        let (ident, name) = self
+            .next()
+            .expect("Tried to parse function name, but there were no more tokens");
+        assert_eq!(
+            ident,
+            T![ident],
+            "Expected identifier as function name, but found `{}`",
+            ident
+        );
+        let parameters = self.named_params();
+        assert!(
+            self.at(T!['{']) || self.at(T![->]),
+            "Expected block or return type after function header"
+        );
+        let mut return_params = Vec::new();
+        if self.at(T![->]) {
+            self.consume(T![->]);
+            return_params = self.named_params();
+        }
+        assert!(self.at(T!['{']), "Expected block after function header");
+        let body = match self.statement() {
+            ast::Stmt::Block { stmts } => stmts,
+            _ => unreachable!(),
+        };
+        ast::Item::Function {
+            name: name.to_string(),
+            parameters,
+            body,
+            return_params,
+        }
+    }
+
+    // parse named parameters (0 or more surrounded by parentheses)
+    // (foo u8, bar u8)
+    fn named_params(&mut self) -> Vec<(String, ast::Type)> {
+        self.consume(T!['(']);
         let mut parameters = Vec::new();
-        match self.peek() {
-            T![fn] => {
-                self.consume(T![fn]);
-                let (ident, name) = self
-                    .next()
-                    .expect("Tried to parse function name, but there were no more tokens");
-                assert_eq!(
-                    ident,
-                    T![ident],
-                    "Expected identifier as function name, but found `{}`",
-                    ident
-                );
-                self.consume(T!['(']);
-                while !self.at(T![')']) {
-                    let (param, param_name) = self
-                        .next()
-                        .expect("Tried to parse function parameter, but there were no more tokens");
-                    assert_eq!(
-                        param,
-                        T![ident],
-                        "Expected identifier as function parameter, but found `{}`",
-                        param
-                    );
-                    let param_type = self.type_();
-                    parameters.push((param_name.to_string(), param_type));
-                    if self.at(T![,]) {
-                        self.consume(T![,]);
-                    }
-                }
-                self.consume(T![')']);
-                assert!(
-                    self.at(T!['{']) || self.at(T![ident]),
-                    "Expected block or return type after function header"
-                );
-                let return_type = if self.at(T![ident]) {
-                    Some(self.type_())
-                } else {
-                    None
-                };
-                assert!(self.at(T!['{']), "Expected block after function header");
-                let body = match self.statement() {
-                    ast::Stmt::Block { stmts } => stmts,
-                    _ => unreachable!(),
-                };
-                ast::Item::Function {
-                    name: name.to_string(),
-                    parameters,
-                    body,
-                    return_type,
-                }
+        while !self.at(T![')']) {
+            let (param, param_name) = self
+                .next()
+                .expect("Tried to parse parameter, but there were no more tokens");
+            assert_eq!(
+                param,
+                T![ident],
+                "Expected identifier as parameter, but found `{}`",
+                param
+            );
+            let param_type = self.type_();
+            parameters.push((param_name.to_string(), param_type));
+            if self.at(T![,]) {
+                self.consume(T![,]);
             }
+        }
+        self.consume(T![')']);
+        parameters
+    }
+
+    // parse top level items
+    pub fn item(&mut self) -> ast::Item {
+        match self.peek() {
+            T![fn] => self.fn_definition(),
             _ => unreachable!(),
         }
     }

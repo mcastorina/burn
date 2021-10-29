@@ -15,8 +15,8 @@ pub fn check(item: &ast::Item) {
             name,
             parameters,
             body,
-            return_type,
-        } => check_fn(name, parameters, body, return_type),
+            return_params,
+        } => check_fn(name, parameters, body, return_params),
     }
 }
 
@@ -24,15 +24,13 @@ fn check_fn(
     _name: &String,
     parameters: &Vec<(String, ast::Type)>,
     _body: &Vec<ast::Stmt>,
-    return_type: &Option<ast::Type>,
+    return_params: &Vec<(String, ast::Type)>,
 ) {
     for (_, param_type) in parameters {
         check_type(param_type.clone());
     }
+    // TODO: check return params
     // TODO: check body stmt
-    if let Some(typ) = return_type {
-        check_type(typ.clone());
-    }
 }
 
 fn check_type(mut typ: ast::Type) {

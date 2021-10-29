@@ -381,7 +381,7 @@ fn parse_fns() {
 
     let func = parse(
         r#"
-        fn foo(a int, b stream<u8>) stream<u8> {
+        fn foo(a int, b stream<u8>) -> (out stream<u8>) {
             x := 1 + 2;
             return b;
         }
@@ -393,7 +393,7 @@ fn parse_fns() {
             name,
             parameters,
             body,
-            return_type,
+            return_params,
         } => {
             assert_eq!(name, "foo");
             assert_eq!(parameters.len(), 2);
@@ -421,14 +421,17 @@ fn parse_fns() {
                 )
             );
             assert_eq!(
-                return_type,
-                Some(Type {
-                    name: "stream".to_string(),
-                    generics: vec![Type {
-                        name: "u8".to_string(),
-                        generics: Vec::new(),
-                    }],
-                })
+                return_params,
+                vec![(
+                    "out".to_string(),
+                    Type {
+                        name: "stream".to_string(),
+                        generics: vec![Type {
+                            name: "u8".to_string(),
+                            generics: Vec::new(),
+                        }],
+                    }
+                )]
             );
             assert_eq!(body.len(), 2);
             assert_eq!(
@@ -491,7 +494,7 @@ fn parse_file() {
     let items = parse(
         r#"
         // Rotates each byte by 13
-        fn rot13(input stream<u8>) stream<u8> {
+        fn rot13(input stream<u8>) -> (out stream<u8>) {
             for byte in input {
                 if byte >= `a` && byte <= `m` || byte >= `A` && byte <= `M` {
                 } else if byte >= `n` && byte <= `z` || byte >= `N` && byte <= `Z` {
