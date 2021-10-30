@@ -62,6 +62,10 @@ where
                     expr: Box::new(expr),
                 }
             }
+            T![_] => {
+                self.consume(T![_]);
+                ast::Expr::Placeholder
+            }
             kind => panic!("Unknown start of expression: `{}`", kind),
         };
 
@@ -112,7 +116,13 @@ where
                         ref mut args,
                     } = rhs
                     {
-                        args.push(lhs);
+                        // try replacing the first ast::Expr::Placeholder, otherwise append to args
+                        if let Some(index) = args.iter().position(|a| *a == ast::Expr::Placeholder)
+                        {
+                            args[index] = lhs;
+                        } else {
+                            args.push(lhs);
+                        }
                         lhs = rhs;
                     } else {
                         // could be a FnCall after a dot / double colon operator

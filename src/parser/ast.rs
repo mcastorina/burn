@@ -21,6 +21,7 @@ pub enum Expr {
         op: Token,
         expr: Box<Expr>,
     },
+    Placeholder,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -99,6 +100,7 @@ impl Display for Expr {
             Expr::PrefixOp { op, expr } => write!(f, "({}{})", op, expr),
             Expr::InfixOp { op, lhs, rhs } => write!(f, "({} {} {})", lhs, op, rhs),
             Expr::PostfixOp { op, expr } => write!(f, "({}{})", expr, op),
+            Expr::Placeholder => write!(f, "_"),
         }
     }
 }

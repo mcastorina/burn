@@ -15,6 +15,8 @@ pub enum Token {
     String,
     #[regex(r#"`([^\\]|\.)`"#)]
     Byte,
+    #[token("_")]
+    Underscore,
     #[token("+")]
     Plus,
     #[token("-")]
@@ -129,6 +131,7 @@ impl Display for Token {
             Token::Number(n) => write!(f, "num({})", n),
             Token::String => write!(f, "string"),
             Token::Byte => write!(f, "byte"),
+            Token::Underscore => write!(f, "_"),
             Token::Plus => write!(f, "+"),
             Token::Minus => write!(f, "-"),
             Token::Asterisk => write!(f, "*"),
@@ -192,6 +195,7 @@ macro_rules! T {
     [num($i:pat)] => { $crate::lexer::Token::Number($i) };
     [string] => { $crate::lexer::Token::String };
     [byte] => { $crate::lexer::Token::Byte };
+    [_] => { $crate::lexer::Token::Underscore };
     [+] => { $crate::lexer::Token::Plus };
     [-] => { $crate::lexer::Token::Minus };
     [*] => { $crate::lexer::Token::Asterisk };

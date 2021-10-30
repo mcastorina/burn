@@ -117,6 +117,16 @@ fn parse_fn_calls() {
         "buzz(baz(bar(foo())))"
     );
     assert_eq!(parse("foo::bar()").to_string(), "(foo :: bar())");
+
+    // assert_eq!(parse("('hello', 'world') -> mix()").to_string(), "mix(\"hello\", \"world\")");
+    assert_eq!(
+        parse("'world' -> mix('hello', _)").to_string(),
+        "mix(\"hello\", \"world\")"
+    );
+    assert_eq!(
+        parse("'hello' -> mix(_, 'world')").to_string(),
+        "mix(\"hello\", \"world\")"
+    );
 }
 
 #[test]
@@ -441,7 +451,6 @@ fn parse_fns() {
                 }
             );
         }
-        _ => unreachable!(),
     }
 }
 
