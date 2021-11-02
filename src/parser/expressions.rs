@@ -1,15 +1,16 @@
 use super::ast;
 use super::Parser;
 use crate::{lexer::Token, T};
+use ast::Expr;
 
 impl<'input, I> Parser<'input, I>
 where
     I: Iterator<Item = (Token, std::ops::Range<usize>)>,
 {
-    pub fn expression(&mut self) -> ast::Expr {
+    pub fn expression(&mut self) -> Expr {
         self.parse_expression(0)
     }
-    fn parse_expression(&mut self, binding_power: u8) -> ast::Expr {
+    fn parse_expression(&mut self, binding_power: u8) -> Expr {
         let mut lhs = match self.peek() {
             T![num(_)] | T![string] | T![byte] => {
                 let (literal_token, literal_text) = self.next().unwrap();
@@ -21,12 +22,12 @@ where
                     T![byte] => ast::Lit::Byt(literal_text[1..literal_text.len() - 1].to_string()),
                     _ => unreachable!(),
                 };
-                ast::Expr::Literal(lit)
+                Expr::Literal(lit)
             }
             T![ident] => {
                 let (_, ident_name) = self.next().unwrap();
                 if !self.at(T!['(']) {
-                    ast::Expr::Ident(ident_name.to_string())
+                    Expr::Ident(ident_name.to_string())
                 } else {
                     // function call
                     let mut args = Vec::new();
@@ -41,7 +42,7 @@ where
                         }
                     }
                     self.consume(T![')']);
-                    ast::Expr::FnCall {
+                    Expr::FnCall {
                         fn_name: ident_name.to_string(),
                         args,
                     }
@@ -50,21 +51,40 @@ where
             T!['('] => {
                 self.consume(T!['(']);
                 let expr = self.parse_expression(0);
-                self.consume(T![')']);
-                expr
+                // (1 + 2, another_expression)
+                // check for tuple
+                if self.at(T![,]) {
+                    // it must be a tuple, which can only be used for syntactic sugar of function
+                    // calls
+                    self.consume(T![,]);
+                    let mut args = vec![expr];
+                    while !self.at(T![')']) {
+                        args.push(self.parse_expression(0));
+                        if self.at(T![,]) {
+                            self.consume(T![,]);
+                        } else if !self.at(T![')']) {
+                            panic!("Unexpected token");
+                        }
+                    }
+                    self.consume(T![')']);
+                    Expr::Tuple(args)
+                } else {
+                    self.consume(T![')']);
+                    expr
+                }
             }
             op @ Token::Plus | op @ Token::Minus | op @ Token::Bang => {
                 self.consume(op);
                 let (_, right_binding_power) = op.prefix_binding_power();
                 let expr = self.parse_expression(right_binding_power);
-                ast::Expr::PrefixOp {
+                Expr::PrefixOp {
                     op,
                     expr: Box::new(expr),
                 }
             }
             T![_] => {
                 self.consume(T![_]);
-                ast::Expr::Placeholder
+                Expr::Placeholder
             }
             kind => panic!("Unknown start of expression: `{}`", kind),
         };
@@ -97,7 +117,7 @@ where
                     break;
                 }
                 self.consume(op);
-                lhs = ast::Expr::PostfixOp {
+                lhs = Expr::PostfixOp {
                     op,
                     expr: Box::new(lhs),
                 };
@@ -111,17 +131,23 @@ where
                 self.consume(op);
                 let mut rhs = self.parse_expression(right_bp);
                 if op == T![->] {
-                    if let ast::Expr::FnCall {
+                    if let Expr::FnCall {
                         fn_name: _,
                         ref mut args,
                     } = rhs
                     {
-                        // try replacing the first ast::Expr::Placeholder, otherwise append to args
-                        if let Some(index) = args.iter().position(|a| *a == ast::Expr::Placeholder)
-                        {
-                            args[index] = lhs;
+                        let lhs_args = if let Expr::Tuple(items) = lhs {
+                            items
                         } else {
-                            args.push(lhs);
+                            vec![lhs]
+                        };
+                        for arg in lhs_args {
+                            // try replacing the first Expr::Placeholder, otherwise append to args
+                            if let Some(index) = args.iter().position(|a| *a == Expr::Placeholder) {
+                                args[index] = arg;
+                            } else {
+                                args.push(arg);
+                            }
                         }
                         lhs = rhs;
                     } else {
@@ -129,12 +155,12 @@ where
                         let mut expr = &mut rhs;
                         loop {
                             match expr {
-                                ast::Expr::InfixOp {
+                                Expr::InfixOp {
                                     op: T![.],
                                     lhs: _,
                                     rhs,
                                 }
-                                | ast::Expr::InfixOp {
+                                | Expr::InfixOp {
                                     op: T![::],
                                     lhs: _,
                                     rhs,
@@ -148,7 +174,7 @@ where
                                     );
                                 }
                             }
-                            if let ast::Expr::FnCall {
+                            if let Expr::FnCall {
                                 fn_name: _,
                                 ref mut args,
                             } = expr
@@ -160,7 +186,7 @@ where
                         }
                     }
                 } else {
-                    lhs = ast::Expr::InfixOp {
+                    lhs = Expr::InfixOp {
                         op,
                         lhs: Box::new(lhs),
                         rhs: Box::new(rhs),

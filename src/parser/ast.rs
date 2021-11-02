@@ -22,6 +22,7 @@ pub enum Expr {
         expr: Box<Expr>,
     },
     Placeholder,
+    Tuple(Vec<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -101,6 +102,13 @@ impl Display for Expr {
             Expr::InfixOp { op, lhs, rhs } => write!(f, "({} {} {})", lhs, op, rhs),
             Expr::PostfixOp { op, expr } => write!(f, "({}{})", expr, op),
             Expr::Placeholder => write!(f, "_"),
+            Expr::Tuple(items) => {
+                write!(f, "(")?;
+                for item in items {
+                    write!(f, "{}", item)?;
+                }
+                write!(f, ")")
+            }
         }
     }
 }

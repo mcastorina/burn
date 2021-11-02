@@ -118,7 +118,10 @@ fn parse_fn_calls() {
     );
     assert_eq!(parse("foo::bar()").to_string(), "(foo :: bar())");
 
-    // assert_eq!(parse("('hello', 'world') -> mix()").to_string(), "mix(\"hello\", \"world\")");
+    assert_eq!(
+        parse("('hello', 'world') -> mix()").to_string(),
+        "mix(\"hello\", \"world\")"
+    );
     assert_eq!(
         parse("'world' -> mix('hello', _)").to_string(),
         "mix(\"hello\", \"world\")"
@@ -126,6 +129,14 @@ fn parse_fn_calls() {
     assert_eq!(
         parse("'hello' -> mix(_, 'world')").to_string(),
         "mix(\"hello\", \"world\")"
+    );
+    assert_eq!(
+        parse("('hello', 'world') -> mix(_, foo, _)").to_string(),
+        "mix(\"hello\", foo, \"world\")"
+    );
+    assert_eq!(
+        parse("('hello', 'world', bar) -> mix(_, foo, _)").to_string(),
+        "mix(\"hello\", foo, \"world\", bar)"
     );
 }
 
