@@ -134,7 +134,7 @@ complete list.
 ## Progress and Current State
 - [x] Design
 - [x] Lexing
-- [ ] Parsing
+- [x] Parsing
 - [ ] Checking
 - [ ] Code generation
 
