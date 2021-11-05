@@ -150,6 +150,13 @@ where
                             }
                         }
                         lhs = rhs;
+                    } else if let Expr::Ident(_) = rhs {
+                        // write an expression to a stream
+                        lhs = Expr::InfixOp {
+                            op,
+                            lhs: Box::new(lhs),
+                            rhs: Box::new(rhs),
+                        };
                     } else {
                         // could be a FnCall after a dot / double colon operator
                         let mut expr = &mut rhs;

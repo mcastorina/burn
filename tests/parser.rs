@@ -391,6 +391,29 @@ fn parse_statements() {
             }),
         })
     );
+
+    assert_eq!(
+        parse("foo -> bar;"),
+        Stmt::Expr(Expr::InfixOp {
+            op: Token::RightArrow,
+            lhs: Box::new(Expr::Ident("foo".to_string())),
+            rhs: Box::new(Expr::Ident("bar".to_string())),
+        })
+    );
+
+    assert_eq!(
+        parse("foo -> bar -> baz;"),
+        // should be ((foo -> bar) -> baz)
+        Stmt::Expr(Expr::InfixOp {
+            op: Token::RightArrow,
+            lhs: Box::new(Expr::InfixOp {
+                op: Token::RightArrow,
+                lhs: Box::new(Expr::Ident("foo".to_string())),
+                rhs: Box::new(Expr::Ident("bar".to_string())),
+            }),
+            rhs: Box::new(Expr::Ident("baz".to_string())),
+        })
+    );
 }
 
 #[test]
@@ -517,8 +540,11 @@ fn parse_file() {
         fn rot13(input stream<u8>) -> (out stream<u8>) {
             for byte in input {
                 if byte >= `a` && byte <= `m` || byte >= `A` && byte <= `M` {
+                    byte + 13 -> out;
                 } else if byte >= `n` && byte <= `z` || byte >= `N` && byte <= `Z` {
+                    byte - 13 -> out;
                 } else {
+                    byte -> out;
                 }
             }
         }
