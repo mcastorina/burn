@@ -35,11 +35,11 @@ pub enum Lit {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     Declaration {
-        var_name: String,
+        var_names: Vec<String>,
         value: Expr,
     },
     Assignment {
-        var_name: String,
+        var_names: Vec<String>,
         value: Expr,
     },
     IfStmt {

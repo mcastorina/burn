@@ -16,7 +16,7 @@ where
                         let value = self.expression();
                         self.consume(T![;]);
                         ast::Stmt::Declaration {
-                            var_name: ident.to_string(),
+                            var_names: vec![ident.to_string()],
                             value,
                         }
                     }
@@ -25,8 +25,43 @@ where
                         let value = self.expression();
                         self.consume(T![;]);
                         ast::Stmt::Assignment {
-                            var_name: ident.to_string(),
+                            var_names: vec![ident.to_string()],
                             value,
+                        }
+                    }
+                    T![,] => {
+                        // destructured declaration or assignment
+                        // 1. loop and collect all identifiers into a vector
+                        let mut idents = vec![ident.to_string()];
+                        while self.peek() == T![,] {
+                            self.consume(T![,]);
+                            let (tok_type, tok_name) = self.next().expect("Expected another token but there were none");
+                            assert_eq!(tok_type, Token::Ident, "Expected an identifier, but found {}", tok_type);
+                            idents.push(tok_name.to_string());
+                        }
+                        // 2. consume declaration / assignment operator
+                        // 3. create statement
+                        // 4. consume semicolon
+                        match self.peek() {
+                            op @ T![:=] => {
+                                self.consume(op);
+                                let value = self.expression();
+                                self.consume(T![;]);
+                                ast::Stmt::Declaration {
+                                    var_names: idents,
+                                    value,
+                                }
+                            }
+                            op @ T![=] => {
+                                self.consume(op);
+                                let value = self.expression();
+                                self.consume(T![;]);
+                                ast::Stmt::Assignment {
+                                    var_names: idents,
+                                    value,
+                                }
+                            }
+                            op => panic!("Unexpected operator {}", op),
                         }
                     }
                     _ => {

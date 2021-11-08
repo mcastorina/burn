@@ -283,7 +283,7 @@ fn parse_statements() {
 
     let let_stmt = &stmts[0];
     match let_stmt {
-        Stmt::Declaration { var_name, .. } => assert_eq!(var_name, "x"),
+        Stmt::Declaration { var_names, .. } => assert_eq!(var_names, &vec!["x".to_string()]),
         _ => unreachable!(),
     }
 
@@ -295,7 +295,7 @@ fn parse_statements() {
 
     let assignment_stmt = &stmts[0];
     match assignment_stmt {
-        Stmt::Assignment { var_name, .. } => assert_eq!(var_name, "x"),
+        Stmt::Assignment { var_names, .. } => assert_eq!(var_names, &vec!["x".to_string()]),
         _ => unreachable!(),
     }
 
@@ -317,12 +317,12 @@ fn parse_statements() {
             assert_eq!(body.len(), 2);
             let x_assignment = &body[0];
             match x_assignment {
-                Stmt::Assignment { var_name, .. } => assert_eq!(var_name, "x"),
+                Stmt::Assignment { var_names, .. } => assert_eq!(var_names, &vec!["x".to_string()]),
                 _ => unreachable!(),
             }
             let y_assignment = &body[1];
             match y_assignment {
-                Stmt::Assignment { var_name, .. } => assert_eq!(var_name, "y"),
+                Stmt::Assignment { var_names, .. } => assert_eq!(var_names, &vec!["y".to_string()]),
                 _ => unreachable!(),
             }
 
@@ -348,12 +348,12 @@ fn parse_statements() {
                     assert_eq!(body.len(), 2);
                     let let_i = &body[0];
                     match let_i {
-                        Stmt::Declaration { var_name, .. } => assert_eq!(var_name, "i"),
+                        Stmt::Declaration { var_names, .. } => assert_eq!(var_names, &vec!["i".to_string()]),
                         _ => unreachable!(),
                     }
                     let x_assignment = &body[1];
                     match x_assignment {
-                        Stmt::Assignment { var_name, .. } => assert_eq!(var_name, "x"),
+                        Stmt::Assignment { var_names, .. } => assert_eq!(var_names, &vec!["x".to_string()]),
                         _ => unreachable!(),
                     }
 
@@ -370,7 +370,7 @@ fn parse_statements() {
 
                     let x_assignment = &stmts[0];
                     match x_assignment {
-                        Stmt::Assignment { var_name, .. } => assert_eq!(var_name, "x"),
+                        Stmt::Assignment { var_names, .. } => assert_eq!(var_names, &vec!["x".to_string()]),
                         _ => unreachable!(),
                     }
                 }
@@ -413,6 +413,28 @@ fn parse_statements() {
             }),
             rhs: Box::new(Expr::Ident("baz".to_string())),
         })
+    );
+
+    assert_eq!(
+        parse("x, y := foo();"),
+        Stmt::Declaration {
+            var_names: vec!["x".to_string(), "y".to_string()],
+            value: Expr::FnCall {
+                fn_name: "foo".to_string(),
+                args: vec![],
+            },
+        },
+    );
+
+    assert_eq!(
+        parse("x, y = foo();"),
+        Stmt::Assignment {
+            var_names: vec!["x".to_string(), "y".to_string()],
+            value: Expr::FnCall {
+                fn_name: "foo".to_string(),
+                args: vec![],
+            },
+        },
     );
 }
 
