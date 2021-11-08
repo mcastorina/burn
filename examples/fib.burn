@@ -10,10 +10,9 @@ fn main() {
     // but SOURCES::raw_args() is not
     args := SOURCES::args().skip(1); // stream<stream<u8>>
 
-    // num is auto-converted from stream<u8> to u32 because it is used
-    // in fibonacci
-    num := args.get();
+    first_arg := args.get(); // stream<u8>
 
-    // convert u32 to an ascii stream
-    fibonacci(num).ascii().chain('\n') -> SINKS::stdout();
+    // first_arg is automatically converted to u32 at the callsite,
+    // then the output is converted an ascii stream
+    fibonacci(first_arg).ascii().chain('\n') -> SINKS::stdout();
 }
