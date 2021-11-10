@@ -57,10 +57,6 @@ pub enum Token {
     RightArrow,
     #[token("&")]
     Ampersand,
-    #[token("<<")]
-    LeftShift,
-    #[token(">>")]
-    RightShift,
     #[token("=")]
     Assign,
     #[token(":=")]
@@ -152,8 +148,6 @@ impl Display for Token {
             Token::DoubleColon => write!(f, "::"),
             Token::RightArrow => write!(f, "->"),
             Token::Ampersand => write!(f, "&"),
-            Token::LeftShift => write!(f, "<<"),
-            Token::RightShift => write!(f, ">>"),
             Token::Assign => write!(f, "="),
             Token::Declare => write!(f, ":="),
             Token::LeftCurlyBracket => write!(f, "{{"),
@@ -216,8 +210,6 @@ macro_rules! T {
     [::] => { $crate::lexer::Token::DoubleColon };
     [->] => { $crate::lexer::Token::RightArrow };
     [&] => { $crate::lexer::Token::Ampersand };
-    [<<] => { $crate::lexer::Token::LeftShift };
-    [>>] => { $crate::lexer::Token::RightShift };
     [=] => { $crate::lexer::Token::Assign };
     [:=] => { $crate::lexer::Token::Declare };
     ['{'] => { $crate::lexer::Token::LeftCurlyBracket };

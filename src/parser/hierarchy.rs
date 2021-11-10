@@ -35,8 +35,15 @@ where
                         let mut idents = vec![ident.to_string()];
                         while self.peek() == T![,] {
                             self.consume(T![,]);
-                            let (tok_type, tok_name) = self.next().expect("Expected another token but there were none");
-                            assert_eq!(tok_type, Token::Ident, "Expected an identifier, but found {}", tok_type);
+                            let (tok_type, tok_name) = self
+                                .next()
+                                .expect("Expected another token but there were none");
+                            assert_eq!(
+                                tok_type,
+                                Token::Ident,
+                                "Expected an identifier, but found {}",
+                                tok_type
+                            );
                             idents.push(tok_name.to_string());
                         }
                         // 2. consume declaration / assignment operator

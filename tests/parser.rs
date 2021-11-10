@@ -81,7 +81,7 @@ fn parse_fn_calls() {
         parse("foo( )"),
         Expr::FnCall {
             fn_name: "foo".to_string(),
-            args: Vec::new(),
+            args: vec![],
         }
     );
 
@@ -101,7 +101,7 @@ fn parse_fn_calls() {
                 Expr::Literal(Lit::Str("baz".to_string())),
                 Expr::FnCall {
                     fn_name: "foo".to_string(),
-                    args: Vec::new(),
+                    args: vec![],
                 }
             ],
         }
@@ -151,7 +151,7 @@ fn parse_method_calls() {
             lhs: Box::new(Expr::Ident("foo".to_string())),
             rhs: Box::new(Expr::FnCall {
                 fn_name: "bar".to_string(),
-                args: Vec::new(),
+                args: vec![],
             }),
         }
     );
@@ -348,12 +348,16 @@ fn parse_statements() {
                     assert_eq!(body.len(), 2);
                     let let_i = &body[0];
                     match let_i {
-                        Stmt::Declaration { var_names, .. } => assert_eq!(var_names, &vec!["i".to_string()]),
+                        Stmt::Declaration { var_names, .. } => {
+                            assert_eq!(var_names, &vec!["i".to_string()])
+                        }
                         _ => unreachable!(),
                     }
                     let x_assignment = &body[1];
                     match x_assignment {
-                        Stmt::Assignment { var_names, .. } => assert_eq!(var_names, &vec!["x".to_string()]),
+                        Stmt::Assignment { var_names, .. } => {
+                            assert_eq!(var_names, &vec!["x".to_string()])
+                        }
                         _ => unreachable!(),
                     }
 
@@ -370,7 +374,9 @@ fn parse_statements() {
 
                     let x_assignment = &stmts[0];
                     match x_assignment {
-                        Stmt::Assignment { var_names, .. } => assert_eq!(var_names, &vec!["x".to_string()]),
+                        Stmt::Assignment { var_names, .. } => {
+                            assert_eq!(var_names, &vec!["x".to_string()])
+                        }
                         _ => unreachable!(),
                     }
                 }
@@ -387,7 +393,7 @@ fn parse_statements() {
             lhs: Box::new(Expr::Ident("foo".to_string())),
             rhs: Box::new(Expr::FnCall {
                 fn_name: "bar".to_string(),
-                args: Vec::new(),
+                args: vec![],
             }),
         })
     );
@@ -439,6 +445,64 @@ fn parse_statements() {
 }
 
 #[test]
+fn parse_types() {
+    fn parse(input: &str) -> Item {
+        let mut parser = Parser::new(input);
+        parser.item()
+    }
+    let func = parse("fn foo(a int, b stream<u8>, c stream<stream<u8>>) {}");
+    match func {
+        Item::Function {
+            name: _,
+            parameters,
+            body: _,
+            return_params: _,
+        } => {
+            assert_eq!(parameters.len(), 3);
+            assert_eq!(
+                parameters[0],
+                (
+                    "a".to_string(),
+                    Type {
+                        name: "int".to_string(),
+                        generics: vec![],
+                    }
+                )
+            );
+            assert_eq!(
+                parameters[1],
+                (
+                    "b".to_string(),
+                    Type {
+                        name: "stream".to_string(),
+                        generics: vec![Type {
+                            name: "u8".to_string(),
+                            generics: vec![],
+                        }],
+                    }
+                )
+            );
+            assert_eq!(
+                parameters[2],
+                (
+                    "c".to_string(),
+                    Type {
+                        name: "stream".to_string(),
+                        generics: vec![Type {
+                            name: "stream".to_string(),
+                            generics: vec![Type {
+                                name: "u8".to_string(),
+                                generics: vec![],
+                            }],
+                        }],
+                    }
+                )
+            );
+        }
+    }
+}
+
+#[test]
 fn parse_fns() {
     fn parse(input: &str) -> Item {
         let mut parser = Parser::new(input);
@@ -469,7 +533,7 @@ fn parse_fns() {
                     "a".to_string(),
                     Type {
                         name: "int".to_string(),
-                        generics: Vec::new(),
+                        generics: vec![],
                     }
                 )
             );
@@ -481,7 +545,7 @@ fn parse_fns() {
                         name: "stream".to_string(),
                         generics: vec![Type {
                             name: "u8".to_string(),
-                            generics: Vec::new(),
+                            generics: vec![],
                         }],
                     }
                 )
@@ -494,7 +558,7 @@ fn parse_fns() {
                         name: "stream".to_string(),
                         generics: vec![Type {
                             name: "u8".to_string(),
-                            generics: Vec::new(),
+                            generics: vec![],
                         }],
                     }
                 )]
@@ -530,9 +594,9 @@ fn parse_for() {
             var_name: "foo".to_string(),
             stream: Expr::FnCall {
                 fn_name: "bar".to_string(),
-                args: Vec::new(),
+                args: vec![],
             },
-            stmts: Vec::new(),
+            stmts: vec![],
         }
     );
 }
