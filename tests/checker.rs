@@ -1,70 +1,51 @@
-use burn::checker;
-use burn::parser::ast::Item;
 use burn::parser::Parser;
+use burn::checker::Checker;
 
-fn parse_item(input: &str) -> Item {
+fn run_checker(input: &str) {
     let mut parser = Parser::new(input);
-    parser.item()
-}
-
-fn parse_items(input: &str) -> Vec<Item> {
-    let mut parser = Parser::new(input);
-    parser.file()
+    let items = parser.file();
+    let mut checker = Checker::new(&items);
+    checker.check_all();
 }
 
 #[test]
 fn check_fn_param_names_unique() {
-    let item = parse_item("fn test(foo u32, bar u32) -> (baz u32) {}");
-    // checker will panic on error
-    checker::check(&item);
+    run_checker("fn main(foo u32, bar u32) -> (baz u32) {}");
 }
 
 #[test]
 #[should_panic]
 fn check_fn_param_names_not_unique() {
-    let item = parse_item("fn test(foo u32, bar u32) -> (foo u32) {}");
-    // checker will panic on error
-    checker::check(&item);
+    run_checker("fn main(foo u32, bar u32) -> (foo u32) {}");
 }
 
 #[test]
 fn check_fn_param_types_valid() {
-    let item =
-        parse_item("fn test(foo stream<stream<u8>>, bar i32) -> (baz u64, buz stream<i64>) {}");
-    // checker will panic on error
-    checker::check(&item);
+    run_checker("fn main(foo stream<stream<u8>>, bar i32) -> (baz u64, buz stream<i64>) {}");
 }
 
 #[test]
 #[should_panic]
 fn check_fn_param_types_invalid() {
-    let item = parse_item("fn test(foo stream<u32>) -> (bar int) {}");
-    // checker will panic on error
-    checker::check(&item);
+    run_checker("fn main(foo stream<u32>) -> (bar int) {}");
 }
+
 
 #[test]
 fn check_fn_names_unique() {
-    let items = parse_items("fn main() {} fn foo() {}");
-    assert_eq!(items.len(), 2);
-    // checker will panic on error
-    checker::check_all(&items);
+    run_checker("fn main() {} fn foo() {}");
 }
 
 #[test]
 #[should_panic]
 fn check_fn_names_not_unique() {
-    let items = parse_items("fn main() {} fn main() {}");
-    // checker will panic on error
-    checker::check_all(&items);
+    run_checker("fn main() {} fn main() {}");
 }
 
 #[test]
 #[should_panic]
 fn check_no_main() {
-    let items = parse_items("fn foo() {} fn bar() {}");
-    // checker will panic on error
-    checker::check_all(&items);
+    run_checker("fn foo() {} fn bar() {}");
 }
 
 #[test]

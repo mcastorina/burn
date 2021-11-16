@@ -7,7 +7,8 @@ use std::fs;
 fn compile(program: &str) {
     let mut parser = parser::Parser::new(program);
     let items = parser.file();
-    checker::check_all(&items);
+    let mut checker = checker::Checker::new(&items);
+    checker.check_all();
 }
 
 pub fn compile_file(input_filename: &str) {
