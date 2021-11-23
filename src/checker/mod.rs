@@ -1,5 +1,5 @@
 use crate::parser::ast;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 // have: list of items
 // need to:
@@ -7,6 +7,11 @@ use std::collections::{HashSet, HashMap};
 //    * function name, parameters, and return parameters
 //  * check body of function definitions
 //  * check scoping
+//    * try one pass
+//    * accumulate variable names / types
+//    * keep reference to parent scope
+//    * keep type information after checking
+//
 
 pub struct Checker<'a> {
     items: &'a Vec<ast::Item>,
@@ -20,7 +25,7 @@ struct FnInfo {
 
 impl<'a> Checker<'a> {
     pub fn new(items: &'a Vec<ast::Item>) -> Self {
-        Self{
+        Self {
             items: items,
             fn_names: HashMap::new(),
         }

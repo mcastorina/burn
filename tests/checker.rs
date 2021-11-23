@@ -1,5 +1,5 @@
-use burn::parser::Parser;
 use burn::checker::Checker;
+use burn::parser::Parser;
 
 fn run_checker(input: &str) {
     let mut parser = Parser::new(input);
@@ -29,7 +29,6 @@ fn check_fn_param_types_valid() {
 fn check_fn_param_types_invalid() {
     run_checker("fn main(foo stream<u32>) -> (bar int) {}");
 }
-
 
 #[test]
 fn check_fn_names_unique() {

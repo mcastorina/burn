@@ -10,67 +10,34 @@ where
     pub fn expression(&mut self) -> Expr {
         self.parse_expression(0)
     }
+    // TODO:
+    // * true recursive descent
+    // * refactor common operations
+    // * define context free grammar
     fn parse_expression(&mut self, binding_power: u8) -> Expr {
         let mut lhs = match self.peek() {
-            T![num(_)] | T![string] | T![byte] => {
-                let (literal_token, literal_text) = self.next().unwrap();
-                let lit = match literal_token {
-                    T![num(n)] => ast::Lit::Int(n),
-                    T![string] => {
-                        ast::Lit::Str(literal_text[1..literal_text.len() - 1].to_string())
-                    }
-                    T![byte] => ast::Lit::Byt(literal_text[1..literal_text.len() - 1].to_string()),
-                    _ => unreachable!(),
-                };
-                Expr::Literal(lit)
-            }
+            T![num(_)] | T![string] | T![byte] => self.literal(),
             T![ident] => {
-                let (_, ident_name) = self.next().unwrap();
+                let (tok, ident_name) = self.next().unwrap();
                 if !self.at(T!['(']) {
                     Expr::Ident(ident_name.to_string())
                 } else {
-                    // function call
-                    let mut args = Vec::new();
-                    self.consume(T!['(']);
-                    while !self.at(T![')']) {
-                        let arg = self.parse_expression(0);
-                        args.push(arg);
-                        if self.at(T![,]) {
-                            self.consume(T![,]);
-                        } else if !self.at(T![')']) {
-                            panic!("Unexpected token");
-                        }
-                    }
-                    self.consume(T![')']);
-                    Expr::FnCall {
-                        fn_name: ident_name.to_string(),
-                        args,
-                    }
+                    self.push((tok, ident_name));
+                    self.fn_call()
                 }
             }
             T!['('] => {
-                self.consume(T!['(']);
-                let expr = self.parse_expression(0);
-                // (1 + 2, another_expression)
-                // check for tuple
-                if self.at(T![,]) {
-                    // it must be a tuple, which can only be used for syntactic sugar of function
-                    // calls
-                    self.consume(T![,]);
-                    let mut args = vec![expr];
-                    while !self.at(T![')']) {
-                        args.push(self.parse_expression(0));
-                        if self.at(T![,]) {
-                            self.consume(T![,]);
-                        } else if !self.at(T![')']) {
-                            panic!("Unexpected token");
-                        }
+                let tup = self.tuple();
+                // tuple with one expression is just the expression
+                // this is needed for arithmetic extension
+                if let Expr::Tuple(mut vec) = tup {
+                    if vec.len() == 1 {
+                        vec.swap_remove(0)
+                    } else {
+                        Expr::Tuple(vec)
                     }
-                    self.consume(T![')']);
-                    Expr::Tuple(args)
                 } else {
-                    self.consume(T![')']);
-                    expr
+                    unreachable!()
                 }
             }
             op @ Token::Plus | op @ Token::Minus | op @ Token::Bang => {
@@ -89,6 +56,7 @@ where
             kind => panic!("Unknown start of expression: `{}`", kind),
         };
 
+        // extend lhs expression
         loop {
             let op = match self.peek() {
                 op @ T![+]
@@ -130,74 +98,56 @@ where
                 }
                 self.consume(op);
                 let mut rhs = self.parse_expression(right_bp);
-                if op == T![->] {
-                    if let Expr::FnCall {
-                        fn_name: _,
-                        ref mut args,
-                    } = rhs
-                    {
-                        let lhs_args = if let Expr::Tuple(items) = lhs {
-                            items
-                        } else {
-                            vec![lhs]
-                        };
-                        for arg in lhs_args {
-                            // try replacing the first Expr::Placeholder, otherwise append to args
-                            if let Some(index) = args.iter().position(|a| *a == Expr::Placeholder) {
-                                args[index] = arg;
-                            } else {
-                                args.push(arg);
-                            }
-                        }
-                        lhs = rhs;
-                    } else if let Expr::Ident(_) = rhs {
-                        // write an expression to a stream
-                        lhs = Expr::InfixOp {
-                            op,
-                            lhs: Box::new(lhs),
-                            rhs: Box::new(rhs),
-                        };
-                    } else {
-                        // could be a FnCall after a dot / double colon operator
-                        let mut expr = &mut rhs;
-                        loop {
-                            match expr {
-                                Expr::InfixOp {
-                                    op: T![.],
-                                    lhs: _,
-                                    rhs,
-                                }
-                                | Expr::InfixOp {
-                                    op: T![::],
-                                    lhs: _,
-                                    rhs,
-                                } => {
-                                    expr = rhs;
-                                }
-                                _ => {
-                                    panic!(
-                                        "Expected a function call after the arrow operator, found `{}`",
-                                        rhs,
-                                    );
-                                }
-                            }
-                            if let Expr::FnCall {
-                                fn_name: _,
-                                ref mut args,
-                            } = expr
-                            {
-                                args.push(lhs);
-                                lhs = rhs;
-                                break;
-                            }
-                        }
-                    }
-                } else {
+                if op != T![->] || matches!(rhs, Expr::Ident(_)) {
                     lhs = Expr::InfixOp {
                         op,
                         lhs: Box::new(lhs),
                         rhs: Box::new(rhs),
                     };
+                    continue;
+                }
+                if let Expr::FnCall {
+                    fn_name: _,
+                    ref mut args,
+                } = rhs
+                {
+                    let lhs_args = if let Expr::Tuple(items) = lhs {
+                        items
+                    } else {
+                        vec![lhs]
+                    };
+                    for arg in lhs_args {
+                        // try replacing the first Expr::Placeholder, otherwise append to args
+                        if let Some(index) = args.iter().position(|a| *a == Expr::Placeholder) {
+                            args[index] = arg;
+                        } else {
+                            args.push(arg);
+                        }
+                    }
+                    lhs = rhs;
+                } else {
+                    // could be a FnCall after a dot / double colon operator
+                    let mut expr = &mut rhs;
+                    loop {
+                        if let Expr::InfixOp { op, rhs, .. } = expr {
+                            if *op != T![.] && *op != T![::] {
+                                panic!(
+                                    "Expected a function call after the arrow operator, found `{}`",
+                                    rhs,
+                                );
+                            }
+                            expr = rhs;
+                        }
+                        if let Expr::FnCall {
+                            fn_name: _,
+                            ref mut args,
+                        } = expr
+                        {
+                            args.push(lhs);
+                            lhs = rhs;
+                            break;
+                        }
+                    }
                 }
                 continue;
             }
@@ -205,6 +155,51 @@ where
         }
 
         lhs
+    }
+
+    fn literal(&mut self) -> Expr {
+        let (literal_token, literal_text) = self.next().unwrap();
+        let lit = match literal_token {
+            T![num(n)] => ast::Lit::Int(n),
+            T![string] => ast::Lit::Str(literal_text[1..literal_text.len() - 1].to_string()),
+            T![byte] => ast::Lit::Byt(literal_text[1..literal_text.len() - 1].to_string()),
+            tok => panic!("Unexpected literal token: {:?}", tok),
+        };
+        Expr::Literal(lit)
+    }
+    fn fn_call(&mut self) -> Expr {
+        let (_, ident_name) = self.next().unwrap();
+        // function call
+        let mut args = Vec::new();
+        self.consume(T!['(']);
+        while !self.at(T![')']) {
+            let arg = self.parse_expression(0);
+            args.push(arg);
+            if self.at(T![,]) {
+                self.consume(T![,]);
+            } else if !self.at(T![')']) {
+                panic!("Unexpected token");
+            }
+        }
+        self.consume(T![')']);
+        Expr::FnCall {
+            fn_name: ident_name.to_string(),
+            args,
+        }
+    }
+    fn tuple(&mut self) -> Expr {
+        self.consume(T!['(']);
+        let mut args = vec![];
+        while !self.at(T![')']) {
+            args.push(self.parse_expression(0));
+            if self.at(T![,]) {
+                self.consume(T![,]);
+            } else if !self.at(T![')']) {
+                panic!("Unexpected token");
+            }
+        }
+        self.consume(T![')']);
+        Expr::Tuple(args)
     }
 }
 
